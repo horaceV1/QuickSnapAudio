@@ -1,4 +1,4 @@
-# ⚡ QuickSnapAudio
+# QuickSnapAudio
 
 A lightweight, cross-platform audio device switcher with global hotkey support for **Windows** and **Linux**.
 
@@ -9,16 +9,16 @@ Assign keyboard shortcuts to your audio devices and switch between them instantl
 
 ---
 
-## ✨ Features
+## Features
 
-- 🎧 **List all audio input/output devices** on your system
-- ⌨️ **Assign global hotkeys** to any audio device
-- 🔄 **Instantly switch** your default audio device with a keypress
-- 🖥️ **System tray** — runs quietly in the background
-- 💾 **Persistent config** — your settings are saved automatically
-- 🐧🪟 **Cross-platform** — works on Windows and Linux
+- **List all audio input/output devices** on your system
+- **Assign global hotkeys** to any audio device
+- **Instantly switch** your default audio device with a keypress
+- **System tray** — runs quietly in the background
+- **Persistent config** — your settings are saved automatically
+- **Cross-platform** — works on Windows and Linux
 
-## 📦 Installation
+## Installation
 
 ### Windows
 1. Download `QuickSnapAudio-Setup.exe` from the [Releases](../../releases) page
@@ -51,16 +51,16 @@ cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel
 ```
 
-## 🚀 Usage
+## Usage
 
 1. **Launch** QuickSnapAudio — it appears in your system tray
 2. **Open Settings** by double-clicking the tray icon
 3. **Select a device** from the dropdown and click **"+ Add Device"**
 4. **Click the Hotkey field** and press your desired key combination (e.g., `Ctrl+Shift+1`)
-5. Click **"💾 Save & Apply"**
+5. Click **"Save & Apply"**
 6. Press your hotkey anywhere to instantly switch audio devices!
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 src/
@@ -78,11 +78,11 @@ src/
     └── linux_hotkey.*     # X11 XGrabKey
 ```
 
-## 📄 License
+## License
 
 MIT License — see [LICENSE](LICENSE) for details.
 
-## 💖 Donate
+## Donate
 
 If you find this project useful, consider supporting it!
 

@@ -136,7 +136,7 @@ void MainWindow::setupUi()
     mainLayout->setContentsMargins(20, 20, 20, 20);
 
     // Title
-    auto *titleLabel = new QLabel("⚡ QuickSnapAudio", this);
+    auto *titleLabel = new QLabel("QuickSnapAudio", this);
     titleLabel->setObjectName("titleLabel");
     mainLayout->addWidget(titleLabel);
 
@@ -149,7 +149,7 @@ void MainWindow::setupUi()
     m_deviceCombo = new QComboBox(this);
     m_deviceCombo->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
 
-    m_refreshBtn = new QPushButton("↻ Refresh", this);
+    m_refreshBtn = new QPushButton("Refresh", this);
     m_refreshBtn->setFixedWidth(100);
 
     m_addBtn = new QPushButton("+ Add Device", this);
@@ -166,7 +166,8 @@ void MainWindow::setupUi()
     m_table->horizontalHeader()->setStretchLastSection(true);
     m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
-    m_table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::ResizeToContents);
+    m_table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Interactive);
+    m_table->horizontalHeader()->resizeSection(2, 200);
     m_table->setColumnHidden(3, true); // Hide device ID column
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -180,7 +181,7 @@ void MainWindow::setupUi()
     m_removeBtn = new QPushButton("Remove Selected", this);
     m_removeBtn->setObjectName("removeBtn");
 
-    m_saveBtn = new QPushButton("💾 Save & Apply", this);
+    m_saveBtn = new QPushButton("Save && Apply", this);
 
     m_statusLabel = new QLabel("", this);
     m_statusLabel->setObjectName("statusLabel");
