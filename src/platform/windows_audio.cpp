@@ -4,22 +4,38 @@
 
 #include <Windows.h>
 #include <mmdeviceapi.h>
-#include <functiondiscoverykeys_devpkey.h>
 #include <Propidl.h>
 #include <combaseapi.h>
 #include <endpointvolume.h>
 #include <QString>
+#include <initguid.h>
 
-// PolicyConfig interface for setting default audio endpoint (undocumented but widely used)
-// {F8679F50-850A-41CF-9C72-430F290290C8}
-static const GUID CLSID_CPolicyConfigClient = {
+// Define PKEY_Device_FriendlyName manually for MinGW compatibility
+// {a45c254e-df1c-4efd-8020-67d146a850e0}, 14
+static const PROPERTYKEY s_PKEY_Device_FriendlyName = {
+    {0xa45c254e, 0xdf1c, 0x4efd, {0x80, 0x20, 0x67, 0xd1, 0x46, 0xa8, 0x50, 0xe0}}, 14
+};
+
+// GUIDs for MMDeviceEnumerator
+static const CLSID s_CLSID_MMDeviceEnumerator = {
+    0xbcde0395, 0xe52f, 0x467c, {0x8e, 0x3d, 0xc4, 0x57, 0x92, 0x91, 0x69, 0x2e}
+};
+static const IID s_IID_IMMDeviceEnumerator = {
+    0xa95664d2, 0x9614, 0x4f35, {0xa7, 0x46, 0xde, 0x8d, 0xb6, 0x36, 0x17, 0xe6}
+};
+
+// PolicyConfig CLSID (undocumented but widely used)
+static const CLSID s_CLSID_CPolicyConfigClient = {
     0x870af99c, 0x171d, 0x4f9e, {0xaf, 0x0d, 0xe6, 0x3d, 0xf4, 0x0c, 0x2b, 0xc9}
 };
 
-// IPolicyConfig interface GUID
-// {F8679F50-850A-41CF-9C72-430F290290C8}
-MIDL_INTERFACE("f8679f50-850a-41cf-9c72-430f290290c8")
-IPolicyConfig : public IUnknown
+// IPolicyConfig IID
+static const IID s_IID_IPolicyConfig = {
+    0xf8679f50, 0x850a, 0x41cf, {0x9c, 0x72, 0x43, 0x0f, 0x29, 0x02, 0x90, 0xc8}
+};
+
+// IPolicyConfig interface (plain C++ abstract class, no MIDL_INTERFACE)
+class IPolicyConfig : public IUnknown
 {
 public:
     virtual HRESULT STDMETHODCALLTYPE GetMixFormat(PCWSTR, WAVEFORMATEX **) = 0;
@@ -31,7 +47,7 @@ public:
     virtual HRESULT STDMETHODCALLTYPE GetShareMode(PCWSTR, struct DeviceShareMode *) = 0;
     virtual HRESULT STDMETHODCALLTYPE SetShareMode(PCWSTR, struct DeviceShareMode *) = 0;
     virtual HRESULT STDMETHODCALLTYPE GetPropertyValue(PCWSTR, const PROPERTYKEY &, PROPVARIANT *) = 0;
-    virtual HRESULT STDMETHODCALLTYPE SetPropertyValue(PCWSTR, const PROPERTYKEY &, CPROPVARIANT *) = 0;
+    virtual HRESULT STDMETHODCALLTYPE SetPropertyValue(PCWSTR, const PROPERTYKEY &, PROPVARIANT *) = 0;
     virtual HRESULT STDMETHODCALLTYPE SetDefaultEndpoint(PCWSTR wszDeviceId, ERole eRole) = 0;
     virtual HRESULT STDMETHODCALLTYPE SetEndpointVisibility(PCWSTR, INT) = 0;
 };
@@ -57,8 +73,8 @@ QVector<AudioDeviceInfo> WindowsAudio::enumerateDevices()
     QVector<AudioDeviceInfo> devices;
 
     IMMDeviceEnumerator *pEnum = nullptr;
-    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr,
-                                   CLSCTX_ALL, __uuidof(IMMDeviceEnumerator),
+    HRESULT hr = CoCreateInstance(s_CLSID_MMDeviceEnumerator, nullptr,
+                                   CLSCTX_ALL, s_IID_IMMDeviceEnumerator,
                                    (void**)&pEnum);
     if (FAILED(hr) || !pEnum)
         return devices;
@@ -83,7 +99,7 @@ QVector<AudioDeviceInfo> WindowsAudio::enumerateDevices()
 
             PROPVARIANT varName;
             PropVariantInit(&varName);
-            pProps->GetValue(PKEY_Device_FriendlyName, &varName);
+            pProps->GetValue(s_PKEY_Device_FriendlyName, &varName);
 
             AudioDeviceInfo info;
             info.id = QString::fromWCharArray(pwszID);
@@ -111,8 +127,8 @@ bool WindowsAudio::setDefaultDevice(const QString &deviceId, bool isOutput)
     Q_UNUSED(isOutput);
 
     IPolicyConfig *pPolicyConfig = nullptr;
-    HRESULT hr = CoCreateInstance(CLSID_CPolicyConfigClient, nullptr, CLSCTX_ALL,
-                                   __uuidof(IPolicyConfig), (void**)&pPolicyConfig);
+    HRESULT hr = CoCreateInstance(s_CLSID_CPolicyConfigClient, nullptr, CLSCTX_ALL,
+                                   s_IID_IPolicyConfig, (void**)&pPolicyConfig);
     if (FAILED(hr) || !pPolicyConfig)
         return false;
 
