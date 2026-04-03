@@ -4,8 +4,8 @@ A lightweight, cross-platform audio device switcher with global hotkey support f
 
 Assign keyboard shortcuts to your audio devices and switch between them instantly — no more clicking through system settings!
 
-![License](https://img.shields.io/github/license/your-username/QuickSnapAudio)
-![Release](https://img.shields.io/github/v/release/your-username/QuickSnapAudio)
+![License](https://img.shields.io/github/license/horaceV1/QuickSnapAudio)
+![Release](https://img.shields.io/github/v/release/horaceV1/QuickSnapAudio)
 
 ---
 
@@ -81,3 +81,9 @@ src/
 ## 📄 License
 
 MIT License — see [LICENSE](LICENSE) for details.
+
+## 💖 Donate
+
+If you find this project useful, consider supporting it!
+
+[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/donate/?hosted_button_id=42LF5MR3NZVN8)
