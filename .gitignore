@@ -1,0 +1,29 @@
+# Build directories
+build/
+cmake-build-*/
+deploy/
+
+# IDE
+.vscode/
+.idea/
+*.user
+*.swp
+*~
+
+# Compiled
+*.o
+*.obj
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Generated
+resources/icon.png
+resources/icon.ico
+*.deb
+QuickSnapAudio-Setup.exe
+
+# OS
+Thumbs.db
+.DS_Store

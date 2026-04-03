@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=QuickSnapAudio
+Comment=Quick audio device switcher with hotkeys
+Exec=quicksnapaudio
+Icon=quicksnapaudio
+Type=Application
+Categories=AudioVideo;Audio;Settings;
+Keywords=audio;sound;hotkey;switch;device;
+StartupNotify=true

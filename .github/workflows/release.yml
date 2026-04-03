@@ -1,0 +1,144 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+          modules: 'qtmultimedia'
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Generate icons
+        run: python generate_icons.py
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Deploy Qt dependencies
+        run: |
+          mkdir deploy
+          copy build\Release\QuickSnapAudio.exe deploy\
+          cd deploy
+          windeployqt QuickSnapAudio.exe --release --no-translations --no-opengl-sw
+        shell: cmd
+
+      - name: Copy icon for installer
+        run: copy resources\icon.ico deploy\
+        shell: cmd
+
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      - name: Build Installer
+        run: |
+          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: QuickSnapAudio-Setup.exe
+
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential cmake \
+            libpulse-dev libx11-dev libxtst-dev \
+            pkg-config \
+            python3
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.0'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          modules: 'qtmultimedia'
+
+      - name: Generate icons
+        run: python3 generate_icons.py
+
+      - name: Configure CMake
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+
+      - name: Build
+        run: cmake --build build --parallel $(nproc)
+
+      - name: Create .deb package
+        run: |
+          cd build
+          cpack -G DEB
+
+      - name: Upload Linux .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-deb
+          path: build/*.deb
+
+  release:
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-installer
+          path: artifacts/
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-deb
+          path: artifacts/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "QuickSnapAudio ${{ github.ref_name }}"
+          body: |
+            ## QuickSnapAudio ${{ github.ref_name }}
+            
+            ### Downloads
+            - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
+            - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
+            
+            ### Features
+            - Add audio input/output devices
+            - Assign hotkey combinations to each device
+            - Instantly switch audio devices with hotkeys
+            - System tray for background operation
+          files: |
+            artifacts/*
+          draft: false
+          prerelease: false
