@@ -19,8 +19,6 @@ deploy/
 *.dylib
 
 # Generated
-resources/icon.png
-resources/icon.ico
 *.deb
 QuickSnapAudio-Setup.exe
 

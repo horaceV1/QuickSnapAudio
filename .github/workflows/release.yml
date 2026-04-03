@@ -8,51 +8,62 @@ on:
 permissions:
   contents: write
 
-env:
-  QT_VERSION: '6.7.2'
-
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt (MSVC)
+      - name: Install Qt (MinGW)
         uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ env.QT_VERSION }}
+          version: '6.8.0'
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_msvc2022_64'
+          arch: 'win64_mingw'
           modules: 'qtmultimedia'
-          cache: true
+          tools: 'tools_mingw1310'
 
-      - name: Setup MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Generate icons
-        run: python generate_icons.py
+      - name: Find Qt and MinGW paths
+        shell: pwsh
+        run: |
+          $qtRoot = "$env:RUNNER_WORKSPACE/Qt/6.8.0/mingw_64"
+          $mingw = "$env:RUNNER_WORKSPACE/Qt/Tools/mingw1310_64"
+          if (!(Test-Path $qtRoot)) {
+            Write-Host "Searching for Qt install..."
+            Get-ChildItem "$env:RUNNER_WORKSPACE/Qt" -Recurse -Filter "qmake.exe" -Depth 4 | Select-Object FullName
+            Get-ChildItem "$env:RUNNER_WORKSPACE/Qt" -Directory -Depth 2 | Select-Object FullName
+          }
+          if (!(Test-Path $mingw)) {
+            $mingw = (Get-ChildItem "$env:RUNNER_WORKSPACE/Qt/Tools" -Directory -Filter "mingw*" | Select-Object -First 1).FullName
+          }
+          echo "QT_ROOT=$qtRoot" >> $env:GITHUB_ENV
+          echo "MINGW_ROOT=$mingw" >> $env:GITHUB_ENV
+          echo "PATH=$mingw\bin;$qtRoot\bin;$env:PATH" >> $env:GITHUB_ENV
+          Write-Host "Qt root: $qtRoot"
+          Write-Host "MinGW root: $mingw"
 
       - name: Configure CMake
         shell: cmd
-        run: cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%Qt6_DIR%"
+        run: >
+          cmake -B build -G "MinGW Makefiles"
+          -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_PREFIX_PATH="%QT_ROOT%"
+          -DCMAKE_C_COMPILER="%MINGW_ROOT%/bin/gcc.exe"
+          -DCMAKE_CXX_COMPILER="%MINGW_ROOT%/bin/g++.exe"
+          -DCMAKE_MAKE_PROGRAM="%MINGW_ROOT%/bin/mingw32-make.exe"
 
       - name: Build
         shell: cmd
-        run: cmake --build build
+        run: cmake --build build --parallel
 
       - name: Deploy Qt dependencies
         shell: cmd
         run: |
           mkdir deploy
           copy build\QuickSnapAudio.exe deploy\
-          "%Qt6_DIR%\bin\windeployqt.exe" deploy\QuickSnapAudio.exe --release --no-translations --no-opengl-sw --no-system-d3d-compiler
-
-      - name: Copy icon for installer
-        shell: cmd
-        run: copy resources\icon.ico deploy\
+          windeployqt deploy\QuickSnapAudio.exe --release --no-translations --no-opengl-sw --no-system-d3d-compiler
+          copy resources\icon.ico deploy\
 
       - name: Install NSIS
         run: choco install nsis -y
@@ -75,30 +86,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential cmake \
             libpulse-dev libx11-dev libxtst-dev \
             libgl1-mesa-dev libglib2.0-dev \
-            pkg-config python3
+            pkg-config
 
-      - name: Install Qt (GCC)
+      - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
-          version: ${{ env.QT_VERSION }}
+          version: '6.8.0'
           host: 'linux'
           target: 'desktop'
           arch: 'linux_gcc_64'
           modules: 'qtmultimedia'
-          cache: true
 
-      - name: Generate icons
-        run: python3 generate_icons.py
+      - name: Find Qt path
+        run: |
+          QT_ROOT="$RUNNER_WORKSPACE/Qt/6.8.0/gcc_64"
+          if [ ! -d "$QT_ROOT" ]; then
+            echo "Searching for Qt..."
+            find "$RUNNER_WORKSPACE/Qt" -name "qmake" -type f 2>/dev/null | head -5
+            ls -la "$RUNNER_WORKSPACE/Qt/" || true
+            ls -la "$RUNNER_WORKSPACE/Qt/6.8.0/" || true
+          fi
+          echo "QT_ROOT=$QT_ROOT" >> $GITHUB_ENV
+          echo "Qt root: $QT_ROOT"
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$Qt6_DIR"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_ROOT"
 
       - name: Build
         run: cmake --build build --parallel "$(nproc)"
