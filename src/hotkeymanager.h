@@ -29,14 +29,17 @@ private:
     QMap<QString, HotkeyBinding> m_bindings;
     int m_nextPlatformId = 1;
 
+public:
 #ifdef _WIN32
     class WinEventFilter;
-    WinEventFilter *m_eventFilter = nullptr;
     friend class WinEventFilter;
+private:
+    WinEventFilter *m_eventFilter = nullptr;
 #elif defined(__linux__)
     class LinuxHotkeyThread;
-    LinuxHotkeyThread *m_thread = nullptr;
     friend class LinuxHotkeyThread;
+private:
+    LinuxHotkeyThread *m_thread = nullptr;
 #endif
 
     void onHotkeyTriggered(int platformId);
