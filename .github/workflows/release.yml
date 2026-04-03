@@ -8,51 +8,61 @@ on:
 permissions:
   contents: write
 
+env:
+  QT_VERSION: '6.7.2'
+
 jobs:
   build-windows:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt
+      - name: Install Qt (MSVC)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.0'
+          version: ${{ env.QT_VERSION }}
           host: 'windows'
           target: 'desktop'
-          arch: 'win64_msvc2019_64'
+          arch: 'win64_msvc2022_64'
           modules: 'qtmultimedia'
+          cache: true
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
 
       - name: Generate icons
         run: python generate_icons.py
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+        shell: cmd
+        run: cmake -B build -G "NMake Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="%Qt6_DIR%"
 
       - name: Build
-        run: cmake --build build --config Release
+        shell: cmd
+        run: cmake --build build
 
       - name: Deploy Qt dependencies
+        shell: cmd
         run: |
           mkdir deploy
-          copy build\Release\QuickSnapAudio.exe deploy\
-          cd deploy
-          windeployqt QuickSnapAudio.exe --release --no-translations --no-opengl-sw
-        shell: cmd
+          copy build\QuickSnapAudio.exe deploy\
+          "%Qt6_DIR%\bin\windeployqt.exe" deploy\QuickSnapAudio.exe --release --no-translations --no-opengl-sw --no-system-d3d-compiler
 
       - name: Copy icon for installer
-        run: copy resources\icon.ico deploy\
         shell: cmd
+        run: copy resources\icon.ico deploy\
 
       - name: Install NSIS
         run: choco install nsis -y
 
       - name: Build Installer
+        shell: pwsh
         run: |
-          & "C:\Program Files (x86)\NSIS\makensis.exe" installer.nsi
+          $nsis = "C:\Program Files (x86)\NSIS\makensis.exe"
+          if (!(Test-Path $nsis)) { $nsis = "C:\Program Files\NSIS\makensis.exe" }
+          & $nsis installer.nsi
 
       - name: Upload Windows Installer
         uses: actions/upload-artifact@v4
@@ -71,31 +81,30 @@ jobs:
           sudo apt-get install -y \
             build-essential cmake \
             libpulse-dev libx11-dev libxtst-dev \
-            pkg-config \
-            python3
+            libgl1-mesa-dev libglib2.0-dev \
+            pkg-config python3
 
-      - name: Install Qt
+      - name: Install Qt (GCC)
         uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.0'
+          version: ${{ env.QT_VERSION }}
           host: 'linux'
           target: 'desktop'
-          arch: 'gcc_64'
+          arch: 'linux_gcc_64'
           modules: 'qtmultimedia'
+          cache: true
 
       - name: Generate icons
         run: python3 generate_icons.py
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ env.Qt6_DIR }}"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$Qt6_DIR"
 
       - name: Build
-        run: cmake --build build --parallel $(nproc)
+        run: cmake --build build --parallel "$(nproc)"
 
       - name: Create .deb package
-        run: |
-          cd build
-          cpack -G DEB
+        run: cd build && cpack -G DEB
 
       - name: Upload Linux .deb
         uses: actions/upload-artifact@v4
@@ -107,8 +116,6 @@ jobs:
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
@@ -121,6 +128,9 @@ jobs:
           name: linux-deb
           path: artifacts/
 
+      - name: List artifacts
+        run: ls -lR artifacts/
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -128,11 +138,11 @@ jobs:
           name: "QuickSnapAudio ${{ github.ref_name }}"
           body: |
             ## QuickSnapAudio ${{ github.ref_name }}
-            
+
             ### Downloads
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
-            
+
             ### Features
             - Add audio input/output devices
             - Assign hotkey combinations to each device
