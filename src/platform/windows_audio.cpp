@@ -67,9 +67,7 @@ QVector<AudioDeviceInfo> WindowsAudio::enumerateDevices()
     QVector<AudioDeviceInfo> devices;
 
     IMMDeviceEnumerator *pEnum = nullptr;
-    HRESULT hr = CoCreateInstance(s_CLSID_MMDeviceEnumerator, nullptr,
-                                   CLSCTX_ALL, s_IID_IMMDeviceEnumerator,
-                                   (void**)&pEnum);
+    HRESULT hr = CoCreateInstance(s_CLSID_MMDeviceEnumerator, nullptr, CLSCTX_ALL, s_IID_IMMDeviceEnumerator, (void**)&pEnum);
     if (FAILED(hr) || !pEnum)
         return devices;
 

@@ -23,6 +23,8 @@ set(SOURCES
     src/trayicon.h
     src/updatechecker.cpp
     src/updatechecker.h
+    src/notificationpopup.cpp
+    src/notificationpopup.h
     src/deviceentry.cpp
     src/deviceentry.h
     resources/resources.qrc

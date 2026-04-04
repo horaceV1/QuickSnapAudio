@@ -6,6 +6,7 @@
 
 class MainWindow;
 class UpdateChecker;
+class NotificationPopup;
 
 class TrayIcon : public QObject {
     Q_OBJECT
@@ -24,6 +25,7 @@ private:
     QMenu *m_menu;
     MainWindow *m_mainWindow;
     UpdateChecker *m_updateChecker;
+    NotificationPopup *m_notificationPopup;
 };
 
 #endif // TRAYICON_H

@@ -12,6 +12,7 @@
 #include <QProcess>
 #include <QDesktopServices>
 #include <QUrl>
+#include <QTextStream>
 
 UpdateChecker::UpdateChecker(QObject *parent)
     : QObject(parent), m_nam(new QNetworkAccessManager(this)), m_silent(false)
@@ -222,13 +223,35 @@ void UpdateChecker::onDownloadFinished(QNetworkReply *reply)
     file.close();
 
 #ifdef _WIN32
-    // Launch the installer and quit the app
-    bool launched = QProcess::startDetached(filePath, {"/S"});
-    if (launched) {
-        QApplication::quit();
+    // On Windows: write a helper batch script that runs the installer silently,
+    // waits for it to finish, then relaunches the app.
+    QString appPath = QApplication::applicationFilePath();
+    QString batchPath = QDir(tempDir).filePath("quicksnapaudio_update.bat");
+
+    QFile batch(batchPath);
+    if (batch.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream ts(&batch);
+        ts << "@echo off\r\n";
+        // Wait a moment for the app to fully exit
+        ts << "timeout /t 2 /nobreak >nul\r\n";
+        // Run installer silently (NSIS /S flag)
+        ts << "\"" << QDir::toNativeSeparators(filePath) << "\" /S\r\n";
+        // Wait for installer to finish (it returns when done in silent mode)
+        // Then relaunch the application
+        ts << "start \"\" \"" << QDir::toNativeSeparators(appPath) << "\"\r\n";
+        ts << "del \"%~f0\"\r\n"; // Self-delete the batch file
+        batch.close();
+
+        bool launched = QProcess::startDetached("cmd.exe", {"/C", batchPath});
+        if (launched) {
+            QApplication::quit();
+        } else {
+            QMessageBox::warning(nullptr, "Update Failed",
+                                 "Could not launch the update script. You can run the installer manually from:\n" + filePath);
+        }
     } else {
         QMessageBox::warning(nullptr, "Update Failed",
-                             "Could not launch the installer. You can run it manually from:\n" + filePath);
+                             "Could not create the update script. You can run the installer manually from:\n" + filePath);
     }
 #else
     // On Linux, use pkexec to install the .deb, then restart

@@ -1,11 +1,13 @@
 #include "trayicon.h"
 #include "mainwindow.h"
 #include "updatechecker.h"
+#include "notificationpopup.h"
 #include <QApplication>
 #include <QIcon>
 
 TrayIcon::TrayIcon(MainWindow *mainWindow, QObject *parent)
-    : QObject(parent), m_mainWindow(mainWindow), m_updateChecker(new UpdateChecker(this))
+    : QObject(parent), m_mainWindow(mainWindow), m_updateChecker(new UpdateChecker(this)),
+      m_notificationPopup(new NotificationPopup())
 {
     m_trayIcon = new QSystemTrayIcon(QIcon(":/icons/tray.png"), this);
     m_trayIcon->setToolTip("QuickSnapAudio");
@@ -37,6 +39,7 @@ TrayIcon::TrayIcon(MainWindow *mainWindow, QObject *parent)
 TrayIcon::~TrayIcon()
 {
     delete m_menu;
+    delete m_notificationPopup;
 }
 
 void TrayIcon::show()
@@ -55,7 +58,5 @@ void TrayIcon::onActivated(QSystemTrayIcon::ActivationReason reason)
 
 void TrayIcon::showSwitchedNotification(const QString &deviceName)
 {
-    m_trayIcon->showMessage("QuickSnapAudio",
-                            QString("Switched to %1").arg(deviceName),
-                            QSystemTrayIcon::Information, 2000);
+    m_notificationPopup->showNotification(QString("Switched to %1").arg(deviceName), 2000);
 }
