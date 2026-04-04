@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("QuickSnapAudio");
-    app.setApplicationVersion("1.0.1");
+    app.setApplicationVersion("1.0.2");
     app.setOrganizationName("QuickSnapAudio");
     app.setQuitOnLastWindowClosed(false);
 
@@ -26,6 +26,7 @@ int main(int argc, char *argv[])
 
     MainWindow mainWindow(&configManager, &audioManager, &hotkeyManager);
     TrayIcon trayIcon(&mainWindow);
+    mainWindow.setTrayIcon(&trayIcon);
 
     trayIcon.show();
 
@@ -33,8 +34,9 @@ int main(int argc, char *argv[])
     auto entries = configManager.loadEntries();
     for (const auto &entry : entries) {
         if (!entry.hotkey.isEmpty()) {
-            hotkeyManager.registerHotkey(entry.id, entry.hotkey, [&audioManager, entry]() {
+            hotkeyManager.registerHotkey(entry.id, entry.hotkey, [&audioManager, &trayIcon, entry]() {
                 audioManager.setDefaultDevice(entry.deviceId, entry.isOutput);
+                trayIcon.showSwitchedNotification(entry.deviceName);
             });
         }
     }

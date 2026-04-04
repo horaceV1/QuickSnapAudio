@@ -13,6 +13,7 @@
 class ConfigManager;
 class AudioDeviceManager;
 class HotkeyManager;
+class TrayIcon;
 struct DeviceEntry;
 
 class MainWindow : public QMainWindow {
@@ -22,6 +23,8 @@ public:
     MainWindow(ConfigManager *config, AudioDeviceManager *audio, HotkeyManager *hotkey,
                QWidget *parent = nullptr);
     ~MainWindow();
+
+    void setTrayIcon(TrayIcon *tray);
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -41,6 +44,7 @@ private:
     ConfigManager *m_configManager;
     AudioDeviceManager *m_audioManager;
     HotkeyManager *m_hotkeyManager;
+    TrayIcon *m_trayIcon = nullptr;
 
     QWidget *m_centralWidget;
     QTableWidget *m_table;

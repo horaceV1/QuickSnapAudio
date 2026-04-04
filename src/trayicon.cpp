@@ -52,3 +52,10 @@ void TrayIcon::onActivated(QSystemTrayIcon::ActivationReason reason)
         m_mainWindow->activateWindow();
     }
 }
+
+void TrayIcon::showSwitchedNotification(const QString &deviceName)
+{
+    m_trayIcon->showMessage("QuickSnapAudio",
+                            QString("Switched to %1").arg(deviceName),
+                            QSystemTrayIcon::Information, 2000);
+}

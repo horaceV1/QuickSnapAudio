@@ -14,6 +14,7 @@ public:
     ~TrayIcon();
 
     void show();
+    void showSwitchedNotification(const QString &deviceName);
 
 private slots:
     void onActivated(QSystemTrayIcon::ActivationReason reason);

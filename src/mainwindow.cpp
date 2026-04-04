@@ -3,6 +3,7 @@
 #include "audiodevicemanager.h"
 #include "hotkeymanager.h"
 #include "deviceentry.h"
+#include "trayicon.h"
 
 #include <QHeaderView>
 #include <QKeySequenceEdit>
@@ -119,6 +120,11 @@ MainWindow::MainWindow(ConfigManager *config, AudioDeviceManager *audio, HotkeyM
 
 MainWindow::~MainWindow() {}
 
+void MainWindow::setTrayIcon(TrayIcon *tray)
+{
+    m_trayIcon = tray;
+}
+
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // Minimize to tray instead of closing
@@ -172,6 +178,7 @@ void MainWindow::setupUi()
     m_table->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_table->setSelectionMode(QAbstractItemView::SingleSelection);
     m_table->verticalHeader()->setVisible(false);
+    m_table->verticalHeader()->setDefaultSectionSize(40);
     m_table->setEditTriggers(QAbstractItemView::NoEditTriggers);
     mainLayout->addWidget(m_table);
 
@@ -305,6 +312,9 @@ void MainWindow::rebindAllHotkeys()
             m_hotkeyManager->registerHotkey(entry.id, entry.hotkey,
                 [this, entry]() {
                     m_audioManager->setDefaultDevice(entry.deviceId, entry.isOutput);
+                    if (m_trayIcon) {
+                        m_trayIcon->showSwitchedNotification(entry.deviceName);
+                    }
                 });
         }
     }
