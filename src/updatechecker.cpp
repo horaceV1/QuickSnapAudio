@@ -156,7 +156,8 @@ void UpdateChecker::downloadAndInstall(const QString &downloadUrl)
     progress->setMinimumDuration(0);
     progress->setValue(0);
 
-    QNetworkRequest request(QUrl(downloadUrl));
+    QUrl url(downloadUrl);
+    QNetworkRequest request{url};
     request.setHeader(QNetworkRequest::UserAgentHeader, "QuickSnapAudio-UpdateChecker");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,
                          QNetworkRequest::NoLessSafeRedirectPolicy);
