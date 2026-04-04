@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Core Gui Multimedia)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Core Gui Multimedia Network)
 
 set(SOURCES
     src/main.cpp
@@ -21,6 +21,8 @@ set(SOURCES
     src/configmanager.h
     src/trayicon.cpp
     src/trayicon.h
+    src/updatechecker.cpp
+    src/updatechecker.h
     src/deviceentry.cpp
     src/deviceentry.h
     resources/resources.qrc
@@ -44,6 +46,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Qt6::Core
     Qt6::Gui
     Qt6::Multimedia
+    Qt6::Network
 )
 
 if(WIN32)
@@ -72,7 +75,7 @@ if(UNIX AND NOT APPLE)
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Daniel Filipe Leonardo Pessoa")
     set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "Quick audio device switcher with hotkeys")
     set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpulse0, libqt6widgets6, libqt6core6, libqt6gui6, libx11-6, libxtst6")
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "libpulse0, libqt6widgets6, libqt6core6, libqt6gui6, libqt6network6, libx11-6, libxtst6")
     set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
     set(CPACK_PACKAGE_NAME "quicksnapaudio")
     include(CPack)

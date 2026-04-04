@@ -5,6 +5,7 @@
 #include <QMenu>
 
 class MainWindow;
+class UpdateChecker;
 
 class TrayIcon : public QObject {
     Q_OBJECT
@@ -21,6 +22,7 @@ private:
     QSystemTrayIcon *m_trayIcon;
     QMenu *m_menu;
     MainWindow *m_mainWindow;
+    UpdateChecker *m_updateChecker;
 };
 
 #endif // TRAYICON_H

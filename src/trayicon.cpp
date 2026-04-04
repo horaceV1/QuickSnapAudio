@@ -1,10 +1,11 @@
 #include "trayicon.h"
 #include "mainwindow.h"
+#include "updatechecker.h"
 #include <QApplication>
 #include <QIcon>
 
 TrayIcon::TrayIcon(MainWindow *mainWindow, QObject *parent)
-    : QObject(parent), m_mainWindow(mainWindow)
+    : QObject(parent), m_mainWindow(mainWindow), m_updateChecker(new UpdateChecker(this))
 {
     m_trayIcon = new QSystemTrayIcon(QIcon(":/icons/tray.png"), this);
     m_trayIcon->setToolTip("QuickSnapAudio");
@@ -16,6 +17,11 @@ TrayIcon::TrayIcon(MainWindow *mainWindow, QObject *parent)
         m_mainWindow->show();
         m_mainWindow->raise();
         m_mainWindow->activateWindow();
+    });
+
+    QAction *updateAction = m_menu->addAction("Check for Updates");
+    connect(updateAction, &QAction::triggered, this, [this]() {
+        m_updateChecker->checkForUpdates(false);
     });
 
     m_menu->addSeparator();
