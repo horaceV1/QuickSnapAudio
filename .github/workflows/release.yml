@@ -162,10 +162,10 @@ jobs:
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
 
-            ### Features
-            - Add audio input/output devices
-            - Assign hotkey combinations to each device
-            - Instantly switch audio devices with hotkeys
+            ### Changes
+            - Check for Updates now properly updates the installed app in-place and relaunches automatically
+            - Custom blue notification popup when switching audio devices via hotkey (replaces slow system toast)
+            - Assign hotkey combinations to each device for instant switching
             - System tray for background operation
           files: |
             artifacts/*
