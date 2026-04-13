@@ -4,6 +4,7 @@
 #include "hotkeymanager.h"
 #include "deviceentry.h"
 #include "trayicon.h"
+#include "thememanager.h"
 
 #include <QHeaderView>
 #include <QKeySequenceEdit>
@@ -21,101 +22,17 @@ MainWindow::MainWindow(ConfigManager *config, AudioDeviceManager *audio, HotkeyM
       m_audioManager(audio),
       m_hotkeyManager(hotkey)
 {
+    // Load saved theme
+    QString savedTheme = m_configManager->loadTheme();
+    ThemeManager::instance().setTheme(savedTheme);
+
     setupUi();
     loadFromConfig();
     setWindowTitle("QuickSnapAudio");
     setMinimumSize(700, 450);
     resize(750, 500);
 
-    // Apply a clean modern style
-    setStyleSheet(R"(
-        QMainWindow {
-            background-color: #1e1e2e;
-        }
-        QWidget {
-            color: #cdd6f4;
-            font-size: 13px;
-        }
-        QTableWidget {
-            background-color: #313244;
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            gridline-color: #45475a;
-            selection-background-color: #585b70;
-        }
-        QTableWidget::item {
-            padding: 6px;
-        }
-        QHeaderView::section {
-            background-color: #45475a;
-            color: #cdd6f4;
-            padding: 8px;
-            border: none;
-            font-weight: bold;
-        }
-        QPushButton {
-            background-color: #89b4fa;
-            color: #1e1e2e;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 18px;
-            font-weight: bold;
-        }
-        QPushButton:hover {
-            background-color: #74c7ec;
-        }
-        QPushButton:pressed {
-            background-color: #89dceb;
-        }
-        QPushButton#removeBtn {
-            background-color: #f38ba8;
-        }
-        QPushButton#removeBtn:hover {
-            background-color: #eba0ac;
-        }
-        QComboBox {
-            background-color: #313244;
-            border: 1px solid #45475a;
-            border-radius: 6px;
-            padding: 6px 12px;
-            min-width: 250px;
-        }
-        QComboBox::drop-down {
-            border: none;
-        }
-        QComboBox QAbstractItemView {
-            background-color: #313244;
-            border: 1px solid #45475a;
-            selection-background-color: #585b70;
-        }
-        QLabel#statusLabel {
-            color: #a6e3a1;
-            font-size: 12px;
-        }
-        QLabel#titleLabel {
-            font-size: 20px;
-            font-weight: bold;
-            color: #cba6f7;
-        }
-        QGroupBox {
-            border: 1px solid #45475a;
-            border-radius: 8px;
-            margin-top: 12px;
-            padding-top: 16px;
-        }
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 12px;
-            padding: 0 6px;
-        }
-        QKeySequenceEdit {
-            background-color: #313244;
-            border: 1px solid #45475a;
-            border-radius: 4px;
-            padding: 4px;
-            color: #f9e2af;
-        }
-    )");
+    applyCurrentTheme();
 }
 
 MainWindow::~MainWindow() {}
@@ -147,8 +64,25 @@ void MainWindow::setupUi()
     mainLayout->addWidget(titleLabel);
 
     auto *subtitleLabel = new QLabel("Assign hotkeys to your audio devices for instant switching.", this);
-    subtitleLabel->setStyleSheet("color: #a6adc8; font-size: 12px; margin-bottom: 8px;");
+    subtitleLabel->setObjectName("subtitleLabel");
     mainLayout->addWidget(subtitleLabel);
+
+    // Theme selector row
+    auto *themeRow = new QHBoxLayout();
+    auto *themeLabel = new QLabel("Theme:", this);
+    m_themeCombo = new QComboBox(this);
+    m_themeCombo->setObjectName("themeCombo");
+    m_themeCombo->setMinimumWidth(180);
+    m_themeCombo->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+
+    auto themes = ThemeManager::instance().availableThemes();
+    m_themeCombo->addItems(themes);
+    m_themeCombo->setCurrentText(ThemeManager::instance().currentTheme());
+
+    themeRow->addWidget(themeLabel);
+    themeRow->addWidget(m_themeCombo);
+    themeRow->addStretch();
+    mainLayout->addLayout(themeRow);
 
     // Add device row
     auto *addRow = new QHBoxLayout();
@@ -204,6 +138,7 @@ void MainWindow::setupUi()
     connect(m_removeBtn, &QPushButton::clicked, this, &MainWindow::onRemoveDevice);
     connect(m_saveBtn, &QPushButton::clicked, this, &MainWindow::onSave);
     connect(m_refreshBtn, &QPushButton::clicked, this, &MainWindow::onRefreshDevices);
+    connect(m_themeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &MainWindow::onThemeChanged);
 
     // Initial device list refresh
     onRefreshDevices();
@@ -238,7 +173,6 @@ void MainWindow::onAddDevice()
 
     // Add a key sequence editor for the hotkey column
     auto *hotkeyEdit = new QKeySequenceEdit(this);
-    hotkeyEdit->setStyleSheet("background-color: #313244; border: 1px solid #45475a; border-radius: 4px; padding: 4px; color: #f9e2af;");
     m_table->setCellWidget(row, 2, hotkeyEdit);
 
     m_table->setItem(row, 3, new QTableWidgetItem(deviceId));
@@ -295,7 +229,6 @@ void MainWindow::loadFromConfig()
         m_table->setItem(row, 1, new QTableWidgetItem(entry.isOutput ? "Output" : "Input"));
 
         auto *hotkeyEdit = new QKeySequenceEdit(QKeySequence(entry.hotkey), this);
-        hotkeyEdit->setStyleSheet("background-color: #313244; border: 1px solid #45475a; border-radius: 4px; padding: 4px; color: #f9e2af;");
         m_table->setCellWidget(row, 2, hotkeyEdit);
 
         m_table->setItem(row, 3, new QTableWidgetItem(entry.deviceId));
@@ -317,5 +250,27 @@ void MainWindow::rebindAllHotkeys()
                     }
                 });
         }
+    }
+}
+
+void MainWindow::onThemeChanged(int index)
+{
+    Q_UNUSED(index);
+    QString themeName = m_themeCombo->currentText();
+    ThemeManager::instance().setTheme(themeName);
+    m_configManager->saveTheme(themeName);
+    applyCurrentTheme();
+    m_statusLabel->setText(QString("Theme: %1").arg(themeName));
+}
+
+void MainWindow::applyCurrentTheme()
+{
+    setStyleSheet(ThemeManager::instance().styleSheet());
+
+    // Update subtitle label color from theme
+    auto *subtitleLabel = findChild<QLabel *>("subtitleLabel");
+    if (subtitleLabel) {
+        ThemeColors c = ThemeManager::instance().colors();
+        subtitleLabel->setStyleSheet(QString("color: %1; font-size: 12px; margin-bottom: 8px;").arg(c.textSecondary));
     }
 }

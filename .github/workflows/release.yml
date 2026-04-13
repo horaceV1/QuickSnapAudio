@@ -162,11 +162,18 @@ jobs:
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
 
-            ### Changes
-            - Check for Updates now properly updates the installed app in-place and relaunches automatically
-            - Custom blue notification popup when switching audio devices via hotkey (replaces slow system toast)
-            - Assign hotkey combinations to each device for instant switching
-            - System tray for background operation
+            ### What's New in v1.0.4
+            - **Appearance presets** — 7 built-in themes: Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, Gruvbox
+            - Theme preference saved and restored across sessions
+            - Notification popup now adapts to the selected theme
+            - New project landing page at GitHub Pages
+            - Updated README with banner logo
+
+            ### Previous Features
+            - Global hotkey audio device switching
+            - System tray integration
+            - Cross-platform (Windows & Linux)
+            - Auto-update from GitHub releases
           files: |
             artifacts/*
           draft: false

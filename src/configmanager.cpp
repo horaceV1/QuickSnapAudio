@@ -44,6 +44,15 @@ QVector<DeviceEntry> ConfigManager::loadEntries() const
 
 void ConfigManager::saveEntries(const QVector<DeviceEntry> &entries)
 {
+    QJsonObject root;
+
+    // Preserve existing config (e.g. theme)
+    QFile readFile(m_configPath);
+    if (readFile.open(QIODevice::ReadOnly)) {
+        root = QJsonDocument::fromJson(readFile.readAll()).object();
+        readFile.close();
+    }
+
     QJsonArray arr;
     for (const auto &entry : entries) {
         QJsonObject obj;
@@ -55,8 +64,38 @@ void ConfigManager::saveEntries(const QVector<DeviceEntry> &entries)
         arr.append(obj);
     }
 
-    QJsonObject root;
     root["devices"] = arr;
+
+    QFile file(m_configPath);
+    if (file.open(QIODevice::WriteOnly)) {
+        file.write(QJsonDocument(root).toJson(QJsonDocument::Indented));
+        file.close();
+    }
+}
+
+QString ConfigManager::loadTheme() const
+{
+    QFile file(m_configPath);
+    if (!file.open(QIODevice::ReadOnly))
+        return "Catppuccin Mocha";
+
+    QJsonDocument doc = QJsonDocument::fromJson(file.readAll());
+    file.close();
+
+    return doc.object().value("theme").toString("Catppuccin Mocha");
+}
+
+void ConfigManager::saveTheme(const QString &themeName)
+{
+    QJsonObject root;
+
+    QFile readFile(m_configPath);
+    if (readFile.open(QIODevice::ReadOnly)) {
+        root = QJsonDocument::fromJson(readFile.readAll()).object();
+        readFile.close();
+    }
+
+    root["theme"] = themeName;
 
     QFile file(m_configPath);
     if (file.open(QIODevice::WriteOnly)) {

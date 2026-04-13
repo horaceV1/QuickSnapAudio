@@ -1,11 +1,19 @@
-# QuickSnapAudio
+<p align="center">
+  <img src="resources/banner_logo_qa.png" alt="QuickSnapAudio" width="600"/>
+</p>
 
-A lightweight, cross-platform audio device switcher with global hotkey support for **Windows** and **Linux**.
+<p align="center">
+  A lightweight, cross-platform audio device switcher with global hotkey support for <b>Windows</b> and <b>Linux</b>.
+</p>
 
-Assign keyboard shortcuts to your audio devices and switch between them instantly — no more clicking through system settings!
+<p align="center">
+  Assign keyboard shortcuts to your audio devices and switch between them instantly — no more clicking through system settings!
+</p>
 
-![License](https://img.shields.io/github/license/horaceV1/QuickSnapAudio)
-![Release](https://img.shields.io/github/v/release/horaceV1/QuickSnapAudio)
+<p align="center">
+  <img src="https://img.shields.io/github/license/horaceV1/QuickSnapAudio" alt="License"/>
+  <img src="https://img.shields.io/github/v/release/horaceV1/QuickSnapAudio" alt="Release"/>
+</p>
 
 ---
 
@@ -14,8 +22,9 @@ Assign keyboard shortcuts to your audio devices and switch between them instantl
 - **List all audio input/output devices** on your system
 - **Assign global hotkeys** to any audio device
 - **Instantly switch** your default audio device with a keypress
+- **Appearance presets** — choose from 7 built-in themes (Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, Gruvbox)
 - **System tray** — runs quietly in the background
-- **Persistent config** — your settings are saved automatically
+- **Persistent config** — your settings and theme are saved automatically
 - **Cross-platform** — works on Windows and Linux
 
 ## Installation
@@ -71,6 +80,7 @@ src/
 ├── hotkeymanager.*        # Cross-platform global hotkey API
 ├── configmanager.*        # JSON config persistence
 ├── deviceentry.h          # Data model
+├── thememanager.*         # Appearance preset themes
 └── platform/
     ├── windows_audio.*    # Windows MMDevice/PolicyConfig
     ├── windows_hotkey.*   # Windows RegisterHotKey

@@ -1,4 +1,5 @@
 #include "notificationpopup.h"
+#include "thememanager.h"
 
 #include <QApplication>
 #include <QScreen>
@@ -80,7 +81,7 @@ void NotificationPopup::paintEvent(QPaintEvent *)
     QPainterPath path;
     path.addRoundedRect(rect(), 10, 10);
 
-    painter.fillPath(path, QColor("#89b4fa"));
+    painter.fillPath(path, QColor(ThemeManager::instance().colors().notificationBg));
 }
 
 void NotificationPopup::showNotification(const QString &message, int durationMs)

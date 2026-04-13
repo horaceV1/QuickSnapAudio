@@ -12,6 +12,9 @@ public:
     QVector<DeviceEntry> loadEntries() const;
     void saveEntries(const QVector<DeviceEntry> &entries);
 
+    QString loadTheme() const;
+    void saveTheme(const QString &themeName);
+
     QString configFilePath() const;
 
 private:

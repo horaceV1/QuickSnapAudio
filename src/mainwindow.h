@@ -25,6 +25,7 @@ public:
     ~MainWindow();
 
     void setTrayIcon(TrayIcon *tray);
+    void applyCurrentTheme();
 
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -34,6 +35,7 @@ private slots:
     void onRemoveDevice();
     void onSave();
     void onRefreshDevices();
+    void onThemeChanged(int index);
 
 private:
     void setupUi();
@@ -49,6 +51,7 @@ private:
     QWidget *m_centralWidget;
     QTableWidget *m_table;
     QComboBox *m_deviceCombo;
+    QComboBox *m_themeCombo;
     QPushButton *m_addBtn;
     QPushButton *m_removeBtn;
     QPushButton *m_saveBtn;

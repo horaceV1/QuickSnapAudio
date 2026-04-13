@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(QuickSnapAudio VERSION 1.0.3 LANGUAGES CXX)
+project(QuickSnapAudio VERSION 1.0.4 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -25,6 +25,8 @@ set(SOURCES
     src/updatechecker.h
     src/notificationpopup.cpp
     src/notificationpopup.h
+    src/thememanager.cpp
+    src/thememanager.h
     src/deviceentry.cpp
     src/deviceentry.h
     resources/resources.qrc
