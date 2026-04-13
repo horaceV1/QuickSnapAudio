@@ -31,10 +31,9 @@ jobs:
 
       - name: Prepare site
         run: |
-          mkdir -p _site
-          cp docs/index.html _site/
           mkdir -p _site/resources
-          cp 'resources/Sem título-2.jpg' _site/resources/
+          cp docs/index.html _site/
+          cp "resources/Sem título-2.jpg" _site/resources/banner.jpg
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
