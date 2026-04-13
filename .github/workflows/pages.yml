@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - 'docs/**'
-      - 'resources/banner_logo_qa.png'
+      - 'resources/Sem título-2.jpg'
 
   workflow_dispatch:
 
@@ -34,7 +34,7 @@ jobs:
           mkdir -p _site
           cp docs/index.html _site/
           mkdir -p _site/resources
-          cp resources/banner_logo_qa.png _site/resources/
+          cp 'resources/Sem título-2.jpg' _site/resources/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

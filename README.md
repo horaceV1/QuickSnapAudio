@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/banner_logo_qa.png" alt="QuickSnapAudio" width="600"/>
+  <img src="resources/Sem título-2.jpg" alt="QuickSnapAudio" width="600"/>
 </p>
 
 <p align="center">
