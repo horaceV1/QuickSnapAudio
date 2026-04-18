@@ -162,18 +162,17 @@ jobs:
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
 
-            ### What's New in v1.0.4
-            - **Appearance presets** — 7 built-in themes: Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, Gruvbox
-            - Theme preference saved and restored across sessions
-            - Notification popup now adapts to the selected theme
-            - New project landing page at GitHub Pages
-            - Updated README with banner logo
+            ### What's New in v1.0.5
+            - **Toggle mute on repeat hotkey** — pressing the same hotkey twice mutes the active device, a third press unmutes; pressing a different hotkey switches devices as before
+            - **Sleek dark custom title bar** — frameless window with a smooth dark title bar (minimize / maximize / close) independent of system theme
+            - **Window opens on launch** — the configuration window is shown at startup so you know the app started; closing or minimizing sends it back to the system tray
+            - **Installer prompts for desktop shortcut** — opt in or out during install
+            - **Installer "Run app now" option** — launch QuickSnapAudio right after installation finishes
 
-            ### Previous Features
-            - Global hotkey audio device switching
-            - System tray integration
-            - Cross-platform (Windows & Linux)
-            - Auto-update from GitHub releases
+            ### Previous Highlights (v1.0.4)
+            - 7 built-in appearance presets: Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, Gruvbox
+            - Theme preference saved across sessions
+            - Notification popup adapts to selected theme
           files: |
             artifacts/*
           draft: false

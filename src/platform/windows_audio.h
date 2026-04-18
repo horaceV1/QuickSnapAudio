@@ -9,6 +9,8 @@ namespace WindowsAudio {
     void cleanup();
     QVector<AudioDeviceInfo> enumerateDevices();
     bool setDefaultDevice(const QString &deviceId, bool isOutput);
+    bool setMute(const QString &deviceId, bool isOutput, bool mute);
+    bool isMuted(const QString &deviceId, bool isOutput);
 }
 
 #endif // WINDOWS_AUDIO_H

@@ -18,6 +18,9 @@ public:
 
     QVector<AudioDeviceInfo> enumerateDevices() const;
     bool setDefaultDevice(const QString &deviceId, bool isOutput);
+    bool setMute(const QString &deviceId, bool isOutput, bool mute);
+    bool isMuted(const QString &deviceId, bool isOutput) const;
+    bool toggleMute(const QString &deviceId, bool isOutput, bool *newMutedState = nullptr);
 };
 
 #endif // AUDIODEVICEMANAGER_H

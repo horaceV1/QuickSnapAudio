@@ -169,4 +169,163 @@ bool LinuxAudio::setDefaultDevice(const QString &deviceId, bool isOutput)
     return data.success;
 }
 
+// ---- Mute support ----
+struct PulseMuteSetArgs {
+    PulseSetData *data;
+    QByteArray deviceIdUtf8;
+    bool isOutput;
+    bool mute;
+};
+
+static void mute_context_state_cb(pa_context *c, void *userdata)
+{
+    auto *args = static_cast<PulseMuteSetArgs *>(userdata);
+    auto *data = args->data;
+    switch (pa_context_get_state(c)) {
+    case PA_CONTEXT_READY:
+        if (args->isOutput) {
+            pa_context_set_sink_mute_by_name(c, args->deviceIdUtf8.constData(),
+                                             args->mute ? 1 : 0, success_cb, data);
+        } else {
+            pa_context_set_source_mute_by_name(c, args->deviceIdUtf8.constData(),
+                                               args->mute ? 1 : 0, success_cb, data);
+        }
+        break;
+    case PA_CONTEXT_FAILED:
+    case PA_CONTEXT_TERMINATED:
+        data->done = true;
+        data->success = false;
+        pa_mainloop_quit(data->mainloop, 1);
+        break;
+    default:
+        break;
+    }
+}
+
+bool LinuxAudio::setMute(const QString &deviceId, bool isOutput, bool mute)
+{
+    PulseSetData data;
+    data.done = false;
+    data.success = false;
+
+    PulseMuteSetArgs args;
+    args.data = &data;
+    args.deviceIdUtf8 = deviceId.toUtf8();
+    args.isOutput = isOutput;
+    args.mute = mute;
+
+    pa_mainloop *ml = pa_mainloop_new();
+    data.mainloop = ml;
+    pa_mainloop_api *api = pa_mainloop_get_api(ml);
+    pa_context *ctx = pa_context_new(api, "QuickSnapAudio");
+
+    pa_context_set_state_callback(ctx, mute_context_state_cb, &args);
+    pa_context_connect(ctx, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
+
+    int ret = 0;
+    while (!data.done) {
+        if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+            break;
+    }
+
+    pa_context_disconnect(ctx);
+    pa_context_unref(ctx);
+    pa_mainloop_free(ml);
+    return data.success;
+}
+
+struct PulseMuteQuery {
+    pa_mainloop *mainloop;
+    bool done;
+    bool muted;
+    bool found;
+};
+
+static void sink_mute_cb(pa_context *, const pa_sink_info *info, int eol, void *userdata)
+{
+    auto *q = static_cast<PulseMuteQuery *>(userdata);
+    if (eol > 0) {
+        q->done = true;
+        pa_mainloop_quit(q->mainloop, 0);
+        return;
+    }
+    if (info) {
+        q->muted = info->mute != 0;
+        q->found = true;
+    }
+}
+
+static void source_mute_cb(pa_context *, const pa_source_info *info, int eol, void *userdata)
+{
+    auto *q = static_cast<PulseMuteQuery *>(userdata);
+    if (eol > 0) {
+        q->done = true;
+        pa_mainloop_quit(q->mainloop, 0);
+        return;
+    }
+    if (info) {
+        q->muted = info->mute != 0;
+        q->found = true;
+    }
+}
+
+struct PulseMuteQueryArgs {
+    PulseMuteQuery *q;
+    QByteArray deviceIdUtf8;
+    bool isOutput;
+};
+
+static void mute_query_state_cb(pa_context *c, void *userdata)
+{
+    auto *args = static_cast<PulseMuteQueryArgs *>(userdata);
+    auto *q = args->q;
+    switch (pa_context_get_state(c)) {
+    case PA_CONTEXT_READY:
+        if (args->isOutput) {
+            pa_context_get_sink_info_by_name(c, args->deviceIdUtf8.constData(), sink_mute_cb, q);
+        } else {
+            pa_context_get_source_info_by_name(c, args->deviceIdUtf8.constData(), source_mute_cb, q);
+        }
+        break;
+    case PA_CONTEXT_FAILED:
+    case PA_CONTEXT_TERMINATED:
+        q->done = true;
+        pa_mainloop_quit(q->mainloop, 1);
+        break;
+    default:
+        break;
+    }
+}
+
+bool LinuxAudio::isMuted(const QString &deviceId, bool isOutput)
+{
+    PulseMuteQuery q;
+    q.done = false;
+    q.muted = false;
+    q.found = false;
+
+    PulseMuteQueryArgs args;
+    args.q = &q;
+    args.deviceIdUtf8 = deviceId.toUtf8();
+    args.isOutput = isOutput;
+
+    pa_mainloop *ml = pa_mainloop_new();
+    q.mainloop = ml;
+    pa_mainloop_api *api = pa_mainloop_get_api(ml);
+    pa_context *ctx = pa_context_new(api, "QuickSnapAudio");
+
+    pa_context_set_state_callback(ctx, mute_query_state_cb, &args);
+    pa_context_connect(ctx, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
+
+    int ret = 0;
+    while (!q.done) {
+        if (pa_mainloop_iterate(ml, 1, &ret) < 0) break;
+    }
+
+    pa_context_disconnect(ctx);
+    pa_context_unref(ctx);
+    pa_mainloop_free(ml);
+    return q.muted;
+}
+
 #endif // __linux__

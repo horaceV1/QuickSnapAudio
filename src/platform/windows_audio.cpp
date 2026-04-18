@@ -135,4 +135,45 @@ bool WindowsAudio::setDefaultDevice(const QString &deviceId, bool isOutput)
     return SUCCEEDED(hr);
 }
 
+static IAudioEndpointVolume *getEndpointVolume(const QString &deviceId)
+{
+    IMMDeviceEnumerator *pEnum = nullptr;
+    HRESULT hr = CoCreateInstance(s_CLSID_MMDeviceEnumerator, nullptr, CLSCTX_ALL,
+                                  s_IID_IMMDeviceEnumerator, (void**)&pEnum);
+    if (FAILED(hr) || !pEnum) return nullptr;
+
+    LPCWSTR wszDeviceId = reinterpret_cast<LPCWSTR>(deviceId.utf16());
+    IMMDevice *pDevice = nullptr;
+    hr = pEnum->GetDevice(wszDeviceId, &pDevice);
+    pEnum->Release();
+    if (FAILED(hr) || !pDevice) return nullptr;
+
+    IAudioEndpointVolume *pVol = nullptr;
+    hr = pDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_ALL, nullptr, (void**)&pVol);
+    pDevice->Release();
+    if (FAILED(hr)) return nullptr;
+    return pVol;
+}
+
+bool WindowsAudio::setMute(const QString &deviceId, bool isOutput, bool mute)
+{
+    Q_UNUSED(isOutput);
+    IAudioEndpointVolume *pVol = getEndpointVolume(deviceId);
+    if (!pVol) return false;
+    HRESULT hr = pVol->SetMute(mute ? TRUE : FALSE, nullptr);
+    pVol->Release();
+    return SUCCEEDED(hr);
+}
+
+bool WindowsAudio::isMuted(const QString &deviceId, bool isOutput)
+{
+    Q_UNUSED(isOutput);
+    IAudioEndpointVolume *pVol = getEndpointVolume(deviceId);
+    if (!pVol) return false;
+    BOOL muted = FALSE;
+    HRESULT hr = pVol->GetMute(&muted);
+    pVol->Release();
+    return SUCCEEDED(hr) && muted;
+}
+
 #endif // _WIN32

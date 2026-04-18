@@ -10,7 +10,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("QuickSnapAudio");
-    app.setApplicationVersion("1.0.4");
+    app.setApplicationVersion("1.0.5");
     app.setOrganizationName("QuickSnapAudio");
     app.setQuitOnLastWindowClosed(false);
 
@@ -30,16 +30,11 @@ int main(int argc, char *argv[])
 
     trayIcon.show();
 
-    // Register saved hotkeys on startup
-    auto entries = configManager.loadEntries();
-    for (const auto &entry : entries) {
-        if (!entry.hotkey.isEmpty()) {
-            hotkeyManager.registerHotkey(entry.id, entry.hotkey, [&audioManager, &trayIcon, entry]() {
-                audioManager.setDefaultDevice(entry.deviceId, entry.isOutput);
-                trayIcon.showSwitchedNotification(entry.deviceName);
-            });
-        }
-    }
+    // Show the main window on startup so the user knows the app launched.
+    // The window will hide to tray on close or minimize.
+    mainWindow.show();
+    mainWindow.raise();
+    mainWindow.activateWindow();
 
     return app.exec();
 }
