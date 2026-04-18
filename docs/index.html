@@ -5,21 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QuickSnapAudio — Instant Audio Device Switching</title>
     <meta name="description" content="A lightweight, cross-platform audio device switcher with global hotkey support for Windows and Linux.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-base: #1e1e2e;
-            --bg-surface: #313244;
-            --bg-overlay: #45475a;
-            --text-primary: #cdd6f4;
-            --text-secondary: #a6adc8;
-            --accent-blue: #89b4fa;
-            --accent-lavender: #cba6f7;
-            --accent-teal: #94e2d5;
-            --accent-green: #a6e3a1;
-            --accent-pink: #f38ba8;
-            --accent-peach: #fab387;
-            --accent-yellow: #f9e2af;
-            --border: #585b70;
+            --bg-base: #0b0d12;
+            --bg-elev-1: #14171f;
+            --bg-elev-2: #1c2030;
+            --bg-elev-3: #262b3d;
+            --text-primary: #e6e8ee;
+            --text-secondary: #a4abbd;
+            --text-muted: #6b7388;
+            --accent-1: #7aa2f7;
+            --accent-2: #bb9af7;
+            --accent-3: #7dcfff;
+            --accent-glow: rgba(122, 162, 247, 0.35);
+            --border: rgba(255, 255, 255, 0.06);
+            --border-strong: rgba(255, 255, 255, 0.12);
+            --grad-primary: linear-gradient(135deg, #7aa2f7 0%, #bb9af7 100%);
+            --grad-text: linear-gradient(135deg, #e6e8ee 0%, #a4abbd 100%);
+            --grad-accent-text: linear-gradient(135deg, #7aa2f7 0%, #7dcfff 50%, #bb9af7 100%);
         }
 
         * {
@@ -28,32 +34,49 @@
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--bg-base);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.65;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            font-feature-settings: "ss01", "cv11";
         }
 
-        /* Animated gradient background */
+        /* Subtle grid + glow background */
+        .bg-layer {
+            position: fixed;
+            inset: 0;
+            z-index: -2;
+            background-color: var(--bg-base);
+            background-image:
+                linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%);
+            -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 80%);
+        }
+
         .bg-glow {
             position: fixed;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at 30% 20%, rgba(137, 180, 250, 0.08) 0%, transparent 50%),
-                        radial-gradient(circle at 70% 80%, rgba(203, 166, 247, 0.06) 0%, transparent 50%),
-                        radial-gradient(circle at 50% 50%, rgba(148, 226, 213, 0.04) 0%, transparent 50%);
-            animation: bgShift 20s ease-in-out infinite;
+            inset: 0;
             z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(circle 600px at 20% 0%,  rgba(122, 162, 247, 0.18), transparent 60%),
+                radial-gradient(circle 500px at 85% 15%, rgba(187, 154, 247, 0.14), transparent 60%),
+                radial-gradient(circle 700px at 50% 90%, rgba(125, 207, 255, 0.10), transparent 70%);
+            animation: glowShift 18s ease-in-out infinite alternate;
         }
 
-        @keyframes bgShift {
-            0%, 100% { transform: translate(0, 0); }
-            33% { transform: translate(-2%, 1%); }
-            66% { transform: translate(2%, -1%); }
+        @keyframes glowShift {
+            0%   { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(0, 30px, 0); }
         }
 
         /* Nav */
@@ -61,377 +84,737 @@
             position: fixed;
             top: 0;
             width: 100%;
-            padding: 1rem 2rem;
+            padding: 0.85rem 2rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            backdrop-filter: blur(20px);
-            background: rgba(30, 30, 46, 0.85);
-            border-bottom: 1px solid rgba(69, 71, 90, 0.5);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            background: rgba(11, 13, 18, 0.65);
+            border-bottom: 1px solid var(--border);
             z-index: 100;
         }
 
         nav .brand {
-            font-size: 1.2rem;
+            font-size: 1.05rem;
             font-weight: 700;
-            color: var(--accent-blue);
+            color: var(--text-primary);
             text-decoration: none;
+            letter-spacing: -0.01em;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        nav .brand .brand-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--grad-primary);
+            box-shadow: 0 0 12px var(--accent-glow);
         }
 
         nav .links {
             display: flex;
             gap: 2rem;
             list-style: none;
+            align-items: center;
         }
 
         nav .links a {
             color: var(--text-secondary);
             text-decoration: none;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
+            font-weight: 500;
             transition: color 0.2s;
         }
 
         nav .links a:hover {
-            color: var(--accent-blue);
+            color: var(--text-primary);
+        }
+
+        nav .nav-cta {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            background: var(--bg-elev-2);
+            border: 1px solid var(--border-strong);
+            color: var(--text-primary) !important;
+        }
+
+        nav .nav-cta:hover {
+            background: var(--bg-elev-3);
         }
 
         /* Hero */
         .hero {
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
+            padding: 9rem 2rem 5rem;
+            display: grid;
+            grid-template-columns: 1.05fr 1fr;
+            gap: 4rem;
             align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 6rem 2rem 4rem;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .hero-banner {
-            max-width: 500px;
-            width: 100%;
-            margin-bottom: 2rem;
-            filter: drop-shadow(0 0 40px rgba(137, 180, 250, 0.3));
+        .hero-text .tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 999px;
+            background: rgba(122, 162, 247, 0.08);
+            border: 1px solid rgba(122, 162, 247, 0.25);
+            color: var(--accent-1);
+            font-size: 0.78rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            margin-bottom: 1.5rem;
         }
 
-        .hero h1 {
-            font-size: 3.5rem;
+        .hero-text .tag .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-1);
+            box-shadow: 0 0 8px var(--accent-1);
+        }
+
+        .hero-text h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-lavender));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 1rem;
+            line-height: 1.05;
+            letter-spacing: -0.035em;
+            margin-bottom: 1.25rem;
         }
 
-        .hero p {
-            font-size: 1.25rem;
+        .hero-text h1 .grad {
+            background: var(--grad-accent-text);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-text p.lead {
+            font-size: 1.15rem;
             color: var(--text-secondary);
-            max-width: 600px;
-            margin-bottom: 2.5rem;
+            max-width: 520px;
+            margin-bottom: 2.25rem;
         }
 
         .hero-buttons {
             display: flex;
-            gap: 1rem;
+            gap: 0.85rem;
             flex-wrap: wrap;
-            justify-content: center;
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.85rem 2rem;
-            border-radius: 12px;
+            gap: 0.55rem;
+            padding: 0.85rem 1.5rem;
+            border-radius: 10px;
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.95rem;
             text-decoration: none;
-            transition: all 0.25s ease;
-            border: none;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+            border: 1px solid transparent;
             cursor: pointer;
+            font-family: inherit;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-lavender));
-            color: var(--bg-base);
-            box-shadow: 0 4px 20px rgba(137, 180, 250, 0.3);
+            background: var(--grad-primary);
+            color: #0b0d12;
+            box-shadow: 0 8px 28px -8px var(--accent-glow);
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(137, 180, 250, 0.4);
+            box-shadow: 0 14px 36px -10px var(--accent-glow);
         }
 
         .btn-secondary {
-            background: var(--bg-surface);
+            background: var(--bg-elev-2);
             color: var(--text-primary);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-strong);
         }
 
         .btn-secondary:hover {
-            background: var(--bg-overlay);
+            background: var(--bg-elev-3);
             transform: translateY(-2px);
+        }
+
+        .btn svg { flex-shrink: 0; }
+
+        /* Hero visual: integrated banner card */
+        .hero-visual {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .banner-frame {
+            position: relative;
+            width: 100%;
+            max-width: 540px;
+            border-radius: 24px;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(122,162,247,0.6), rgba(187,154,247,0.2) 40%, rgba(125,207,255,0.5));
+            box-shadow:
+                0 30px 80px -30px rgba(122, 162, 247, 0.35),
+                0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+            transform: perspective(1200px) rotateY(-4deg) rotateX(2deg);
+            transition: transform 0.5s cubic-bezier(.2,.8,.2,1);
+        }
+
+        .banner-frame:hover {
+            transform: perspective(1200px) rotateY(0deg) rotateX(0deg);
+        }
+
+        .banner-frame::before {
+            content: "";
+            position: absolute;
+            inset: -40px;
+            background: radial-gradient(circle at 50% 50%, rgba(122,162,247,0.25), transparent 60%);
+            z-index: -1;
+            filter: blur(20px);
+        }
+
+        .banner-inner {
+            position: relative;
+            border-radius: 23px;
+            overflow: hidden;
+            background: var(--bg-elev-1);
+        }
+
+        .banner-inner img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .banner-shine {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+            mix-blend-mode: overlay;
+            pointer-events: none;
+        }
+
+        /* Floating chips around banner */
+        .chip {
+            position: absolute;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.5rem 0.85rem;
+            background: rgba(20, 23, 31, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border-strong);
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            box-shadow: 0 8px 24px -10px rgba(0,0,0,0.6);
+        }
+
+        .chip .kbd {
+            display: inline-block;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background: var(--bg-elev-3);
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            border: 1px solid var(--border-strong);
+        }
+
+        .chip-1 { top: -14px; left: -22px; animation: float 6s ease-in-out infinite; }
+        .chip-2 { bottom: -14px; right: -22px; animation: float 7s ease-in-out infinite reverse; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-8px); }
         }
 
         /* Sections */
         section {
-            padding: 5rem 2rem;
-            max-width: 1100px;
+            padding: 6rem 2rem;
+            max-width: 1180px;
             margin: 0 auto;
         }
 
+        .section-eyebrow {
+            display: block;
+            text-align: center;
+            color: var(--accent-1);
+            font-size: 0.82rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
         .section-title {
-            font-size: 2.2rem;
+            font-size: clamp(1.85rem, 3.4vw, 2.6rem);
             font-weight: 700;
             text-align: center;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-teal));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            margin-bottom: 0.85rem;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
         }
 
         .section-subtitle {
             text-align: center;
             color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 3rem;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
+            font-size: 1.05rem;
+            margin: 0 auto 3.5rem;
+            max-width: 640px;
         }
 
         /* Feature cards */
         .features-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.25rem;
         }
 
         .feature-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--bg-overlay);
+            position: relative;
+            background: linear-gradient(180deg, var(--bg-elev-1), var(--bg-elev-2));
+            border: 1px solid var(--border);
             border-radius: 16px;
-            padding: 2rem;
-            transition: all 0.3s ease;
+            padding: 1.75rem;
+            transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(122,162,247,0.6), transparent);
+            opacity: 0;
+            transition: opacity 0.25s;
         }
 
         .feature-card:hover {
-            border-color: var(--accent-blue);
             transform: translateY(-4px);
-            box-shadow: 0 8px 30px rgba(137, 180, 250, 0.1);
+            border-color: var(--border-strong);
+            box-shadow: 0 14px 40px -16px rgba(0,0,0,0.6);
         }
 
+        .feature-card:hover::before { opacity: 1; }
+
         .feature-icon {
-            font-size: 2rem;
-            margin-bottom: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: rgba(122, 162, 247, 0.1);
+            border: 1px solid rgba(122, 162, 247, 0.25);
+            color: var(--accent-1);
+            margin-bottom: 1.1rem;
         }
 
         .feature-card h3 {
-            font-size: 1.2rem;
-            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.45rem;
             color: var(--text-primary);
+            letter-spacing: -0.01em;
         }
 
         .feature-card p {
             color: var(--text-secondary);
-            font-size: 0.95rem;
+            font-size: 0.92rem;
+        }
+
+        /* Showcase strip with banner integrated */
+        .showcase {
+            margin-top: 1rem;
+            padding: 4rem 2rem;
+        }
+
+        .showcase-card {
+            position: relative;
+            border-radius: 24px;
+            padding: 3rem;
+            background: linear-gradient(135deg, var(--bg-elev-1), var(--bg-elev-2));
+            border: 1px solid var(--border);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .showcase-card::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 60%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(187, 154, 247, 0.12), transparent 60%);
+            pointer-events: none;
+        }
+
+        .showcase-card h3 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.85rem;
+        }
+
+        .showcase-card p {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .showcase-img {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-strong);
+            box-shadow: 0 30px 60px -30px rgba(0,0,0,0.7);
+        }
+
+        .showcase-img img {
+            display: block;
+            width: 100%;
+            height: auto;
         }
 
         /* Theme showcase */
         .themes-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 1rem;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 0.85rem;
             margin-top: 2rem;
         }
 
         .theme-swatch {
-            border-radius: 12px;
+            position: relative;
+            border-radius: 14px;
             padding: 1.5rem 1rem;
             text-align: center;
             font-weight: 600;
             font-size: 0.85rem;
-            border: 2px solid transparent;
-            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
             cursor: default;
+            overflow: hidden;
+        }
+
+        .theme-swatch::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent 40%);
+            pointer-events: none;
         }
 
         .theme-swatch:hover {
-            transform: scale(1.05);
-            border-color: var(--accent-blue);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px -10px rgba(0,0,0,0.6);
         }
 
         .theme-catppuccin { background: #1e1e2e; color: #cdd6f4; border-color: #45475a; }
-        .theme-light { background: #f5f5f5; color: #1e1e1e; border-color: #d0d0d0; }
-        .theme-nord { background: #2e3440; color: #eceff4; border-color: #434c5e; }
-        .theme-dracula { background: #282a36; color: #f8f8f2; border-color: #6272a4; }
-        .theme-solarized { background: #002b36; color: #839496; border-color: #586e75; }
-        .theme-tokyo { background: #1a1b26; color: #c0caf5; border-color: #414868; }
-        .theme-gruvbox { background: #282828; color: #ebdbb2; border-color: #504945; }
+        .theme-light      { background: #f5f5f5; color: #1e1e1e; border-color: #d0d0d0; }
+        .theme-nord       { background: #2e3440; color: #eceff4; border-color: #434c5e; }
+        .theme-dracula    { background: #282a36; color: #f8f8f2; border-color: #6272a4; }
+        .theme-solarized  { background: #002b36; color: #839496; border-color: #586e75; }
+        .theme-tokyo      { background: #1a1b26; color: #c0caf5; border-color: #414868; }
+        .theme-gruvbox    { background: #282828; color: #ebdbb2; border-color: #504945; }
 
         /* Install section */
         .install-tabs {
-            display: flex;
-            gap: 0.5rem;
+            display: inline-flex;
+            gap: 0.25rem;
             margin-bottom: 1.5rem;
+            background: var(--bg-elev-1);
+            border: 1px solid var(--border);
+            padding: 4px;
+            border-radius: 12px;
+        }
+
+        .install-wrapper {
+            display: flex;
             justify-content: center;
         }
 
-        .tab-btn {
-            padding: 0.6rem 1.5rem;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            background: var(--bg-surface);
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 0.95rem;
-            transition: all 0.2s;
+        .install-content {
+            max-width: 720px;
+            margin: 0 auto;
         }
 
+        .tab-btn {
+            padding: 0.55rem 1.25rem;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.18s;
+            font-family: inherit;
+        }
+
+        .tab-btn:hover { color: var(--text-primary); }
+
         .tab-btn.active {
-            background: var(--accent-blue);
-            color: var(--bg-base);
-            border-color: var(--accent-blue);
-            font-weight: 600;
+            background: var(--bg-elev-3);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px -2px rgba(0,0,0,0.4);
         }
 
         .tab-content {
             display: none;
-            background: var(--bg-surface);
-            border: 1px solid var(--bg-overlay);
-            border-radius: 12px;
+            background: var(--bg-elev-1);
+            border: 1px solid var(--border);
+            border-radius: 16px;
             padding: 2rem;
         }
 
-        .tab-content.active {
-            display: block;
-        }
+        .tab-content.active { display: block; }
 
         .tab-content code {
             display: block;
-            background: var(--bg-base);
-            padding: 1rem;
-            border-radius: 8px;
-            font-family: 'Fira Code', 'Cascadia Code', monospace;
-            font-size: 0.9rem;
-            color: var(--accent-green);
+            background: #07090d;
+            padding: 1rem 1.2rem;
+            border-radius: 10px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #9ece6a;
             overflow-x: auto;
-            margin-top: 0.5rem;
+            margin-top: 0.75rem;
+            border: 1px solid var(--border);
+            line-height: 1.7;
         }
 
         .tab-content h3 {
-            margin-bottom: 0.5rem;
-            color: var(--accent-blue);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.4rem;
+            color: var(--text-primary);
         }
 
         .tab-content p {
             color: var(--text-secondary);
-            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
         }
 
         /* Footer */
         footer {
             text-align: center;
-            padding: 3rem 2rem;
-            border-top: 1px solid var(--bg-overlay);
-            color: var(--text-secondary);
-            font-size: 0.9rem;
+            padding: 3rem 2rem 4rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.88rem;
         }
 
         footer a {
-            color: var(--accent-blue);
+            color: var(--text-secondary);
             text-decoration: none;
+            transition: color 0.2s;
         }
 
-        footer a:hover {
-            text-decoration: underline;
+        footer a:hover { color: var(--accent-1); }
+
+        footer .footer-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        footer .footer-brand .brand-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--grad-primary);
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .hero h1 { font-size: 2.5rem; }
-            .hero p { font-size: 1.05rem; }
-            nav .links { gap: 1rem; }
-            .features-grid { grid-template-columns: 1fr; }
+        @media (max-width: 960px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+                padding-top: 7rem;
+                text-align: center;
+            }
+            .hero-text .tag,
+            .hero-buttons { justify-content: center; }
+            .hero-text p.lead { margin-left: auto; margin-right: auto; }
+            .banner-frame { transform: none; }
+            .showcase-card { grid-template-columns: 1fr; padding: 2rem; }
         }
 
-        @media (max-width: 480px) {
-            .hero h1 { font-size: 2rem; }
-            nav .links { display: none; }
-            .hero-buttons { flex-direction: column; align-items: center; }
+        @media (max-width: 600px) {
+            nav { padding: 0.75rem 1.25rem; }
+            nav .links { gap: 1rem; }
+            nav .links a:not(.nav-cta) { display: none; }
+            section { padding: 4rem 1.25rem; }
+            .hero { padding: 6.5rem 1.25rem 3rem; }
+            .hero-buttons { flex-direction: column; align-items: stretch; }
+            .btn { justify-content: center; }
+            .chip-1, .chip-2 { display: none; }
         }
     </style>
 </head>
 <body>
+    <div class="bg-layer"></div>
     <div class="bg-glow"></div>
 
     <nav>
-        <a href="#" class="brand">QuickSnapAudio</a>
+        <a href="#" class="brand"><span class="brand-dot"></span>QuickSnapAudio</a>
         <ul class="links">
             <li><a href="#features">Features</a></li>
             <li><a href="#themes">Themes</a></li>
             <li><a href="#install">Install</a></li>
-            <li><a href="https://github.com/horaceV1/QuickSnapAudio">GitHub</a></li>
+            <li><a href="https://github.com/horaceV1/QuickSnapAudio" class="nav-cta">GitHub</a></li>
         </ul>
     </nav>
 
     <section class="hero">
-        <img src="resources/banner.jpg" alt="QuickSnapAudio" class="hero-banner" />
-        <h1>QuickSnapAudio</h1>
-        <p>Switch your audio devices instantly with global hotkeys. Lightweight, cross-platform, and beautiful.</p>
-        <div class="hero-buttons">
-            <a href="https://github.com/horaceV1/QuickSnapAudio/releases/latest" class="btn btn-primary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Download Latest
-            </a>
-            <a href="https://github.com/horaceV1/QuickSnapAudio" class="btn btn-secondary">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-                View on GitHub
-            </a>
+        <div class="hero-text">
+            <span class="tag"><span class="dot"></span>v1.0.5 — Now with mute toggle</span>
+            <h1>Switch audio devices <span class="grad">in a snap.</span></h1>
+            <p class="lead">A lightweight, cross-platform audio device switcher. Bind a global hotkey to any input or output, swap instantly, and toggle mute with a second tap — without touching the mouse.</p>
+            <div class="hero-buttons">
+                <a href="https://github.com/horaceV1/QuickSnapAudio/releases/latest" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download Latest
+                </a>
+                <a href="https://github.com/horaceV1/QuickSnapAudio" class="btn btn-secondary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                    View Source
+                </a>
+            </div>
+        </div>
+
+        <div class="hero-visual">
+            <div class="banner-frame">
+                <div class="banner-inner">
+                    <img src="resources/banner.jpg" alt="QuickSnapAudio interface preview" />
+                    <div class="banner-shine"></div>
+                </div>
+            </div>
+            <div class="chip chip-1"><span class="kbd">Ctrl</span>+<span class="kbd">Alt</span>+<span class="kbd">1</span> Headphones</div>
+            <div class="chip chip-2"><span class="kbd">Ctrl</span>+<span class="kbd">Alt</span>+<span class="kbd">2</span> Speakers</div>
         </div>
     </section>
 
     <section id="features">
-        <h2 class="section-title">Features</h2>
-        <p class="section-subtitle">Everything you need to manage audio devices efficiently.</p>
+        <span class="section-eyebrow">Features</span>
+        <h2 class="section-title">Built for keyboard-first workflows</h2>
+        <p class="section-subtitle">Everything you need to manage audio devices efficiently — and nothing you don't.</p>
+
         <div class="features-grid">
             <div class="feature-card">
-                <div class="feature-icon">&#9889;</div>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                </div>
                 <h3>Global Hotkeys</h3>
                 <p>Assign keyboard shortcuts to any audio device and switch instantly from anywhere — no window focus needed.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">&#127911;</div>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </div>
+                <h3>Toggle Mute</h3>
+                <p>Press the same hotkey twice to mute the active device. A third tap unmutes — perfect for quick push-to-mute moments.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                </div>
                 <h3>All Devices</h3>
-                <p>Enumerate and manage all input and output audio devices on your system in one place.</p>
+                <p>Enumerate and manage every input and output endpoint on your system from a single, unified table.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">&#127912;</div>
-                <h3>7 Theme Presets</h3>
-                <p>Choose from Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, and Gruvbox.</p>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 2a10 10 0 0 0 0 20c.553 0 1-.447 1-1v-3a3 3 0 0 1 5.66-1.41A8 8 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg>
+                </div>
+                <h3>Seven Theme Presets</h3>
+                <p>Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, and Gruvbox — change instantly.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">&#128268;</div>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </div>
+                <h3>Custom Title Bar</h3>
+                <p>A sleek, frameless dark title bar that stays consistent on every theme and looks great on any OS.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </div>
                 <h3>System Tray</h3>
-                <p>Runs quietly in the background. Minimize to tray and access settings from the context menu.</p>
+                <p>Runs quietly in the background. Close or minimize hides to tray; double-click to bring settings back.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">&#128190;</div>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                </div>
                 <h3>Persistent Config</h3>
-                <p>Your device bindings and theme preference are saved automatically as JSON — no setup on restart.</p>
+                <p>Bindings and theme are saved automatically as JSON — no setup needed when you reopen the app.</p>
             </div>
+
             <div class="feature-card">
-                <div class="feature-icon">&#128187;</div>
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+                </div>
                 <h3>Cross-Platform</h3>
-                <p>Native support for Windows (MMDevice API) and Linux (PulseAudio + X11). Built with Qt 6.</p>
+                <p>Native Windows (MMDevice / WASAPI) and Linux (PulseAudio + X11) backends. Built on Qt 6 and C++17.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <h3>Auto-Updates</h3>
+                <p>Checks GitHub Releases for new versions on demand and shows release notes inline before you upgrade.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="showcase">
+        <div class="showcase-card">
+            <div>
+                <span class="section-eyebrow" style="text-align:left">A peek inside</span>
+                <h3>Designed to get out of your way.</h3>
+                <p>Open the configurator, drop in a device, set a hotkey, and forget about it. The window slips into the system tray the moment you're done — your shortcuts keep working.</p>
+                <a href="https://github.com/horaceV1/QuickSnapAudio/releases/latest" class="btn btn-primary">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Get v1.0.5
+                </a>
+            </div>
+            <div class="showcase-img">
+                <img src="resources/banner.jpg" alt="QuickSnapAudio interface" />
             </div>
         </div>
     </section>
 
     <section id="themes">
-        <h2 class="section-title">Appearance Presets</h2>
-        <p class="section-subtitle">Pick the look that suits your style. Theme changes apply instantly.</p>
+        <span class="section-eyebrow">Appearance</span>
+        <h2 class="section-title">Pick a look that fits your setup</h2>
+        <p class="section-subtitle">Seven hand-tuned palettes. Switch any time — the change applies instantly.</p>
         <div class="themes-grid">
             <div class="theme-swatch theme-catppuccin">Catppuccin Mocha</div>
             <div class="theme-swatch theme-light">Light</div>
@@ -444,49 +827,67 @@
     </section>
 
     <section id="install">
+        <span class="section-eyebrow">Get Started</span>
         <h2 class="section-title">Installation</h2>
-        <p class="section-subtitle">Get started in seconds on your platform.</p>
+        <p class="section-subtitle">Up and running in seconds on every supported platform.</p>
 
-        <div class="install-tabs">
-            <button class="tab-btn active" onclick="showTab('windows')">Windows</button>
-            <button class="tab-btn" onclick="showTab('linux')">Linux</button>
-            <button class="tab-btn" onclick="showTab('source')">From Source</button>
-        </div>
+        <div class="install-content">
+            <div class="install-wrapper">
+                <div class="install-tabs" role="tablist">
+                    <button class="tab-btn active" data-tab="windows">Windows</button>
+                    <button class="tab-btn" data-tab="linux">Linux</button>
+                    <button class="tab-btn" data-tab="source">From Source</button>
+                </div>
+            </div>
 
-        <div id="tab-windows" class="tab-content active">
-            <h3>Windows Installer</h3>
-            <p>Download the installer from the latest release and run it.</p>
-            <code>1. Download QuickSnapAudio-Setup.exe from Releases<br>2. Run the installer<br>3. Launch from Start Menu or Desktop</code>
-        </div>
+            <div id="tab-windows" class="tab-content active">
+                <h3>Windows Installer</h3>
+                <p>Download the installer from the latest release and run it. The installer asks whether you want a desktop shortcut and offers to launch the app once setup completes.</p>
+                <code>1. Download QuickSnapAudio-Setup.exe from Releases
+2. Run the installer (admin rights required)
+3. Launch from the Start Menu or your desktop</code>
+            </div>
 
-        <div id="tab-linux" class="tab-content">
-            <h3>Debian / Ubuntu</h3>
-            <p>Download the .deb package and install:</p>
-            <code>sudo dpkg -i quicksnapaudio_*.deb</code>
-        </div>
+            <div id="tab-linux" class="tab-content">
+                <h3>Debian / Ubuntu</h3>
+                <p>Download the .deb package from the latest release and install with dpkg:</p>
+                <code>sudo dpkg -i quicksnapaudio_*.deb
+sudo apt-get install -f   # resolve any missing deps</code>
+            </div>
 
-        <div id="tab-source" class="tab-content">
-            <h3>Build from Source</h3>
-            <p>Requires CMake 3.16+, Qt 6.x, and a C++17 compiler.</p>
-            <code>cmake -B build -DCMAKE_BUILD_TYPE=Release<br>cmake --build build --parallel</code>
+            <div id="tab-source" class="tab-content">
+                <h3>Build from Source</h3>
+                <p>Requires CMake 3.16 or newer, Qt 6.x with the Multimedia and Network modules, and a C++17 compiler.</p>
+                <code>git clone https://github.com/horaceV1/QuickSnapAudio.git
+cd QuickSnapAudio
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel</code>
+            </div>
         </div>
     </section>
 
     <footer>
+        <div class="footer-brand"><span class="brand-dot"></span>QuickSnapAudio</div>
         <p>
-            <a href="https://github.com/horaceV1/QuickSnapAudio">QuickSnapAudio</a> &mdash;
-            MIT License &mdash;
-            Made by <a href="https://github.com/horaceV1">Daniel Filipe Leonardo Pessoa</a>
+            <a href="https://github.com/horaceV1/QuickSnapAudio">Source</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/horaceV1/QuickSnapAudio/releases">Releases</a>
+            &nbsp;·&nbsp;
+            <a href="https://github.com/horaceV1/QuickSnapAudio/blob/main/LICENSE">MIT License</a>
         </p>
+        <p style="margin-top: 0.6rem;">Crafted by <a href="https://github.com/horaceV1">Daniel Filipe Leonardo Pessoa</a></p>
     </footer>
 
     <script>
-        function showTab(name) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            document.getElementById('tab-' + name).classList.add('active');
-            event.target.classList.add('active');
-        }
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const name = btn.dataset.tab;
+                document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+                document.getElementById('tab-' + name).classList.add('active');
+                btn.classList.add('active');
+            });
+        });
     </script>
 </body>
 </html>
