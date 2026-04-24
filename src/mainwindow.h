@@ -10,13 +10,40 @@
 #include <QLabel>
 #include <QCloseEvent>
 #include <QPoint>
+#include <QSet>
 
 class ConfigManager;
 class AudioDeviceManager;
 class HotkeyManager;
+class BluetoothManager;
 class TrayIcon;
 struct DeviceEntry;
 class QMouseEvent;
+
+// A custom-painted window control button so the minimize / maximize / close
+// glyphs share an identical visual language regardless of platform fonts.
+class WindowControlButton : public QPushButton {
+    Q_OBJECT
+public:
+    enum class Kind { Minimize, Maximize, Restore, Close };
+
+    explicit WindowControlButton(Kind kind, QWidget *parent = nullptr);
+    void setKind(Kind kind);
+    void setHoverColor(const QColor &bg, const QColor &fg);
+    void setBaseColor(const QColor &fg);
+
+protected:
+    void paintEvent(QPaintEvent *event) override;
+    void enterEvent(QEnterEvent *event) override;
+    void leaveEvent(QEvent *event) override;
+
+private:
+    Kind m_kind;
+    QColor m_hoverBg{0, 0, 0, 0};
+    QColor m_hoverFg{255, 255, 255};
+    QColor m_baseFg{220, 220, 220};
+    bool m_hovered = false;
+};
 
 // Custom dark title bar embedded in this header to keep MOC simple.
 class TitleBar : public QWidget {
@@ -24,6 +51,7 @@ class TitleBar : public QWidget {
 public:
     explicit TitleBar(QWidget *parent = nullptr);
     void setTitle(const QString &title);
+    void setMaximizedState(bool maximized);
 
 signals:
     void minimizeClicked();
@@ -40,9 +68,9 @@ protected:
 private:
     QLabel *m_iconLabel = nullptr;
     QLabel *m_titleLabel = nullptr;
-    QPushButton *m_minBtn = nullptr;
-    QPushButton *m_maxBtn = nullptr;
-    QPushButton *m_closeBtn = nullptr;
+    WindowControlButton *m_minBtn = nullptr;
+    WindowControlButton *m_maxBtn = nullptr;
+    WindowControlButton *m_closeBtn = nullptr;
     QPoint m_dragPos;
     bool m_dragging = false;
 };
@@ -52,7 +80,7 @@ class MainWindow : public QMainWindow {
 
 public:
     MainWindow(ConfigManager *config, AudioDeviceManager *audio, HotkeyManager *hotkey,
-               QWidget *parent = nullptr);
+               BluetoothManager *bluetooth, QWidget *parent = nullptr);
     ~MainWindow();
 
     void setTrayIcon(TrayIcon *tray);
@@ -82,11 +110,13 @@ private:
     void loadFromConfig();
     QVector<DeviceEntry> collectEntriesFromTable() const;
 
-    void handleHotkeyActivated(const DeviceEntry &entry);
+    void handleHotkeyShortPress(const DeviceEntry &entry);
+    void handleHotkeyLongPress(const DeviceEntry &entry);
 
     ConfigManager *m_configManager;
     AudioDeviceManager *m_audioManager;
     HotkeyManager *m_hotkeyManager;
+    BluetoothManager *m_bluetoothManager;
     TrayIcon *m_trayIcon = nullptr;
 
     QWidget *m_centralWidget;
@@ -104,6 +134,10 @@ private:
     // Toggle-mute state: tracks the device most recently activated by hotkey
     QString m_lastActivatedDeviceId;
     bool m_lastActivatedIsOutput = true;
+
+    // Track devices the user disconnected via long-press, so a second
+    // long-press reconnects them.
+    QSet<QString> m_disconnectedDevices;
 };
 
 #endif // MAINWINDOW_H

@@ -162,17 +162,14 @@ jobs:
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
 
-            ### What's New in v1.0.5
-            - **Toggle mute on repeat hotkey** — pressing the same hotkey twice mutes the active device, a third press unmutes; pressing a different hotkey switches devices as before
-            - **Sleek dark custom title bar** — frameless window with a smooth dark title bar (minimize / maximize / close) independent of system theme
-            - **Window opens on launch** — the configuration window is shown at startup so you know the app started; closing or minimizing sends it back to the system tray
-            - **Installer prompts for desktop shortcut** — opt in or out during install
-            - **Installer "Run app now" option** — launch QuickSnapAudio right after installation finishes
+            ### What's New in v1.0.6
+            - **Hold-to-disconnect for Bluetooth / wireless devices** — holding a device's hotkey for 1.2s disconnects the paired Bluetooth audio device; holding it again reconnects it. Wireless detection is automatic from the device name and shown as `· BT` in the device picker.
+            - **Refreshed, more cohesive UI** — modern card-based layout, refined typography, consistent input styling, custom-rounded scrollbars, and a tighter colour palette across all 7 themes.
+            - **Cohesive window controls** — minimize / maximize / close buttons are now custom-painted to share an identical icon language regardless of system fonts; the maximize glyph switches to a restore icon when the window is maximized.
+            - **Hardened auto-updater** — the update download is now restricted to GitHub-controlled hosts over HTTPS as a defence-in-depth measure against tampered API responses.
 
-            ### Previous Highlights (v1.0.4)
-            - 7 built-in appearance presets: Catppuccin Mocha, Light, Nord, Dracula, Solarized Dark, Tokyo Night, Gruvbox
-            - Theme preference saved across sessions
-            - Notification popup adapts to selected theme
+            ### Previous Highlights (v1.0.5)
+            - Toggle mute on repeat hotkey, sleek dark custom title bar, window opens on launch, installer prompts for desktop shortcut, optional "Run app now" on install
           files: |
             artifacts/*
           draft: false

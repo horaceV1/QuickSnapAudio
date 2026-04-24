@@ -179,4 +179,25 @@ void LinuxHotkey::unregisterHotkey(HotkeyManager::LinuxHotkeyThread *thread, int
     thread->removeHotkey(platformId);
 }
 
+bool LinuxHotkey::isKeyDown(int qtKey)
+{
+    KeySym keysym = qtKeyToKeySym(qtKey);
+    if (keysym == NoSymbol) return false;
+
+    Display *dpy = XOpenDisplay(nullptr);
+    if (!dpy) return false;
+
+    KeyCode keycode = XKeysymToKeycode(dpy, keysym);
+    if (keycode == 0) {
+        XCloseDisplay(dpy);
+        return false;
+    }
+
+    char keys[32] = {};
+    XQueryKeymap(dpy, keys);
+    XCloseDisplay(dpy);
+
+    return (keys[keycode / 8] & (1 << (keycode % 8))) != 0;
+}
+
 #endif // __linux__

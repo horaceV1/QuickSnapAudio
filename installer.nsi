@@ -87,7 +87,7 @@ Section "Install"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\QuickSnapAudio" \
         "Publisher" "Daniel Filipe Leonardo Pessoa"
     WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\QuickSnapAudio" \
-        "DisplayVersion" "1.0.5"
+        "DisplayVersion" "1.0.6"
 SectionEnd
 
 Section "Uninstall"

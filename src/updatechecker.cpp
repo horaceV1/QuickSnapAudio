@@ -151,13 +151,39 @@ void UpdateChecker::onReleaseInfoReceived(QNetworkReply *reply)
 
 void UpdateChecker::downloadAndInstall(const QString &downloadUrl)
 {
+    // Defence in depth: only accept downloads from GitHub-controlled hosts.
+    // The GitHub API is trusted, but an attacker who could MitM or tamper
+    // with the response should not be able to redirect us to an arbitrary
+    // executable.
+    const QUrl url(downloadUrl);
+    static const QStringList kAllowedHosts = {
+        QStringLiteral("github.com"),
+        QStringLiteral("api.github.com"),
+        QStringLiteral("objects.githubusercontent.com"),
+        QStringLiteral("release-assets.githubusercontent.com"),
+        QStringLiteral("codeload.github.com"),
+    };
+    const QString host = url.host().toLower();
+    bool hostOk = false;
+    for (const auto &allowed : kAllowedHosts) {
+        if (host == allowed || host.endsWith(QStringLiteral(".") + allowed)) {
+            hostOk = true;
+            break;
+        }
+    }
+    if (url.scheme().compare("https", Qt::CaseInsensitive) != 0 || !hostOk) {
+        QMessageBox::warning(nullptr, "Update Blocked",
+                             QString("Refusing to download update from an "
+                                     "unexpected host:\n%1").arg(downloadUrl));
+        return;
+    }
+
     auto *progress = new QProgressDialog("Downloading update...", "Cancel", 0, 100, nullptr);
     progress->setWindowTitle("QuickSnapAudio Update");
     progress->setWindowModality(Qt::ApplicationModal);
     progress->setMinimumDuration(0);
     progress->setValue(0);
 
-    QUrl url(downloadUrl);
     QNetworkRequest request{url};
     request.setHeader(QNetworkRequest::UserAgentHeader, "QuickSnapAudio-UpdateChecker");
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute,

@@ -5,12 +5,13 @@
 #include "configmanager.h"
 #include "hotkeymanager.h"
 #include "audiodevicemanager.h"
+#include "bluetoothmanager.h"
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("QuickSnapAudio");
-    app.setApplicationVersion("1.0.5");
+    app.setApplicationVersion("1.0.6");
     app.setOrganizationName("QuickSnapAudio");
     app.setQuitOnLastWindowClosed(false);
 
@@ -23,15 +24,14 @@ int main(int argc, char *argv[])
     ConfigManager configManager;
     AudioDeviceManager audioManager;
     HotkeyManager hotkeyManager;
+    BluetoothManager bluetoothManager;
 
-    MainWindow mainWindow(&configManager, &audioManager, &hotkeyManager);
+    MainWindow mainWindow(&configManager, &audioManager, &hotkeyManager, &bluetoothManager);
     TrayIcon trayIcon(&mainWindow);
     mainWindow.setTrayIcon(&trayIcon);
 
     trayIcon.show();
 
-    // Show the main window on startup so the user knows the app launched.
-    // The window will hide to tray on close or minimize.
     mainWindow.show();
     mainWindow.raise();
     mainWindow.activateWindow();
