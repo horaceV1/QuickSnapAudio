@@ -1,1 +1,6 @@
+// UAC manifest — embeds resources/app.manifest as the application manifest
+// (resource type 24, resource ID 1 = CREATEPROCESS_MANIFEST_RESOURCE_ID) so
+// Windows applies it on launch and prompts for elevation.
+1 24 "app.manifest"
+
 IDI_ICON1 ICON "icon.ico"

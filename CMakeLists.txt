@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(QuickSnapAudio VERSION 1.0.6 LANGUAGES CXX)
+project(QuickSnapAudio VERSION 1.0.7 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -61,6 +61,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 if(WIN32)
     target_link_libraries(${PROJECT_NAME} PRIVATE ole32 oleaut32 mmdevapi bthprops user32)
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
+
+    # Suppress MSVC linker's default UAC manifest so the one embedded via
+    # resources/app.rc (-> app.manifest, requireAdministrator) is the only
+    # manifest in the binary. MinGW doesn't add its own.
+    if(MSVC)
+        set_target_properties(${PROJECT_NAME} PROPERTIES
+            LINK_FLAGS "/MANIFEST:NO")
+    endif()
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(PULSE REQUIRED libpulse)

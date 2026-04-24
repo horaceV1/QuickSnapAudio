@@ -268,7 +268,20 @@ MainWindow::MainWindow(ConfigManager *config, AudioDeviceManager *audio, HotkeyM
     loadFromConfig();
     setWindowTitle("QuickSnapAudio");
     setMinimumSize(760, 520);
-    resize(820, 580);
+
+    // Restore window geometry from previous session, falling back to a
+    // sensible default if no geometry was saved or it was rejected (e.g.
+    // monitor disconnected since last run).
+    const QByteArray geom = m_configManager->loadWindowGeometry();
+    if (geom.isEmpty() || !restoreGeometry(geom)) {
+        resize(820, 580);
+    }
+
+    // Restore the set of devices the user last left in a 'disconnected'
+    // state via long-press, so a subsequent long-press reconnects (rather
+    // than disconnecting an already-disconnected device).
+    const QStringList persistedDc = m_configManager->loadDisconnectedDevices();
+    for (const auto &n : persistedDc) m_disconnectedDevices.insert(n);
 
     applyCurrentTheme();
     rebindAllHotkeys();
@@ -283,6 +296,10 @@ void MainWindow::setTrayIcon(TrayIcon *tray)
 
 void MainWindow::closeEvent(QCloseEvent *event)
 {
+    // Persist geometry every time the window is closed/hidden so a future
+    // launch restores the user's last layout.
+    if (m_configManager)
+        m_configManager->saveWindowGeometry(saveGeometry());
     hide();
     event->ignore();
 }
@@ -525,7 +542,8 @@ void MainWindow::onRemoveDevice()
         QMessageBox::information(this, "Remove", "Please select a row to remove.");
         return;
     }
-    QString name = m_table->item(row, 0)->text();
+    QTableWidgetItem *nameItem = m_table->item(row, 0);
+    const QString name = nameItem ? nameItem->text() : QString();
     m_table->removeRow(row);
     m_statusLabel->setText(QString("Removed: %1").arg(name));
 }
@@ -542,14 +560,20 @@ QVector<DeviceEntry> MainWindow::collectEntriesFromTable() const
 {
     QVector<DeviceEntry> entries;
     for (int row = 0; row < m_table->rowCount(); ++row) {
+        // Defensive null checks — a row missing items would crash on .text().
+        QTableWidgetItem *nameItem = m_table->item(row, 0);
+        QTableWidgetItem *typeItem = m_table->item(row, 1);
+        QTableWidgetItem *idItem   = m_table->item(row, 3);
+        if (!nameItem || !typeItem || !idItem) continue;
+
         DeviceEntry entry;
         entry.id = QUuid::createUuid().toString(QUuid::WithoutBraces);
-        entry.deviceName = m_table->item(row, 0)->text();
-        entry.isOutput = (m_table->item(row, 1)->text() == "Output");
+        entry.deviceName = nameItem->text();
+        entry.isOutput   = (typeItem->text() == "Output");
 
         auto *hotkeyEdit = qobject_cast<QKeySequenceEdit *>(m_table->cellWidget(row, 2));
         entry.hotkey = hotkeyEdit ? hotkeyEdit->keySequence().toString(QKeySequence::PortableText) : "";
-        entry.deviceId = m_table->item(row, 3)->text();
+        entry.deviceId = idItem->text();
         entries.append(entry);
     }
     return entries;
@@ -639,6 +663,12 @@ void MainWindow::handleHotkeyLongPress(const DeviceEntry &entry)
         ok = m_bluetoothManager->disconnect(entry.deviceName, &err);
         verb = ok ? QStringLiteral("Disconnected") : QStringLiteral("Disconnect failed");
         if (ok) m_disconnectedDevices.insert(key);
+    }
+
+    // Persist the updated set so the state survives an app restart.
+    if (ok && m_configManager) {
+        m_configManager->saveDisconnectedDevices(
+            QStringList(m_disconnectedDevices.begin(), m_disconnectedDevices.end()));
     }
 
     if (m_trayIcon) {

@@ -4,6 +4,8 @@
 #include <pulse/pulseaudio.h>
 #include <QEventLoop>
 #include <QTimer>
+#include <QElapsedTimer>
+#include <QDebug>
 #include <cstring>
 
 struct PulseEnumData {
@@ -78,8 +80,18 @@ QVector<AudioDeviceInfo> LinuxAudio::enumerateDevices()
     pa_context_set_state_callback(ctx, context_state_cb_enum, &data);
     pa_context_connect(ctx, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
 
+    // Hard cap so a hung PulseAudio daemon can never freeze the UI thread.
+    QElapsedTimer timer;
+    timer.start();
+    constexpr qint64 kMaxMs = 5000;
+
     int ret = 0;
     while (!data.done) {
+        if (timer.hasExpired(kMaxMs)) {
+            qWarning("LinuxAudio::enumerateDevices: PulseAudio timeout after %lld ms",
+                     static_cast<long long>(timer.elapsed()));
+            break;
+        }
         if (pa_mainloop_iterate(ml, 1, &ret) < 0)
             break;
     }
