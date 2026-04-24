@@ -65,6 +65,14 @@ void WindowsHotkey::unregisterHotkey(int id)
     UnregisterHotKey(nullptr, id);
 }
 
+bool WindowsHotkey::isKeyDown(int qtKey)
+{
+    UINT vk = qtKeyToVk(qtKey);
+    if (vk == 0) return false;
+    // High-order bit set => key currently down
+    return (GetAsyncKeyState(static_cast<int>(vk)) & 0x8000) != 0;
+}
+
 // ---- Native event filter ----
 
 HotkeyManager::WinEventFilter::WinEventFilter(HotkeyManager *manager)

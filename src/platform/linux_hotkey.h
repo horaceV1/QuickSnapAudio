@@ -37,6 +37,7 @@ private:
 namespace LinuxHotkey {
     bool registerHotkey(HotkeyManager::LinuxHotkeyThread *thread, int platformId, int qtModifiers, int qtKey);
     void unregisterHotkey(HotkeyManager::LinuxHotkeyThread *thread, int platformId);
+    bool isKeyDown(int qtKey);
 }
 
 #endif // __linux__

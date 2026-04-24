@@ -9,6 +9,7 @@
 namespace WindowsHotkey {
     bool registerHotkey(int id, int qtModifiers, int qtKey);
     void unregisterHotkey(int id);
+    bool isKeyDown(int qtKey);
 }
 
 class HotkeyManager::WinEventFilter : public QAbstractNativeEventFilter {

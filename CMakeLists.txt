@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(QuickSnapAudio VERSION 1.0.5 LANGUAGES CXX)
+project(QuickSnapAudio VERSION 1.0.6 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -32,13 +32,17 @@ set(SOURCES
     resources/resources.qrc
 )
 
+list(APPEND SOURCES src/bluetoothmanager.cpp src/bluetoothmanager.h)
+
 if(WIN32)
     list(APPEND SOURCES src/platform/windows_audio.cpp src/platform/windows_audio.h)
     list(APPEND SOURCES src/platform/windows_hotkey.cpp src/platform/windows_hotkey.h)
+    list(APPEND SOURCES src/platform/windows_bluetooth.cpp src/platform/windows_bluetooth.h)
     list(APPEND SOURCES resources/app.rc)
 elseif(UNIX AND NOT APPLE)
     list(APPEND SOURCES src/platform/linux_audio.cpp src/platform/linux_audio.h)
     list(APPEND SOURCES src/platform/linux_hotkey.cpp src/platform/linux_hotkey.h)
+    list(APPEND SOURCES src/platform/linux_bluetooth.cpp src/platform/linux_bluetooth.h)
 endif()
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -54,7 +58,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 if(WIN32)
-    target_link_libraries(${PROJECT_NAME} PRIVATE ole32 oleaut32 mmdevapi)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ole32 oleaut32 mmdevapi bthprops user32)
     set_target_properties(${PROJECT_NAME} PROPERTIES WIN32_EXECUTABLE TRUE)
 elseif(UNIX AND NOT APPLE)
     find_package(PkgConfig REQUIRED)
