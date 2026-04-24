@@ -1,5 +1,7 @@
 #include "bluetoothmanager.h"
 
+#include <QStringList>
+
 #ifdef _WIN32
 #include "platform/windows_bluetooth.h"
 #elif defined(__linux__)

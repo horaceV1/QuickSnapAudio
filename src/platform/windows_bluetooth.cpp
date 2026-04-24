@@ -9,6 +9,15 @@
 
 #pragma comment(lib, "Bthprops.lib")
 
+// Some MinGW SDKs ship bluetoothapis.h without the service-state constants.
+// They are documented as 0x00 / 0x01 in the Windows SDK.
+#ifndef BLUETOOTH_SERVICE_DISABLE
+#define BLUETOOTH_SERVICE_DISABLE 0x00
+#endif
+#ifndef BLUETOOTH_SERVICE_ENABLE
+#define BLUETOOTH_SERVICE_ENABLE  0x01
+#endif
+
 // Bluetooth audio service GUIDs we attempt to toggle. Disabling any one of
 // these typically disconnects the audio device; enabling them re-establishes
 // the connection automatically when the device is in range.
@@ -73,7 +82,10 @@ bool WindowsBluetooth::setConnected(const QString &deviceName, bool connect)
                         kHeadsetServiceClass_UUID,
                     };
                     for (const auto &svc : services) {
-                        DWORD r = BluetoothSetServiceState(hRadio, &devInfo, &svc, newState);
+                        // BluetoothSetServiceState takes a non-const GUID* on
+                        // some SDKs (notably MinGW) but does not modify it.
+                        GUID svcCopy = svc;
+                        DWORD r = BluetoothSetServiceState(hRadio, &devInfo, &svcCopy, newState);
                         if (r == ERROR_SUCCESS) anySuccess = true;
                     }
                 }
