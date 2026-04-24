@@ -52,15 +52,24 @@ QString findDeviceMac(const QString &deviceName)
 
 } // namespace
 
-bool LinuxBluetooth::setConnected(const QString &deviceName, bool connect)
+bool LinuxBluetooth::setConnected(const QString &deviceName, bool connect, QString *errorOut)
 {
     const QString mac = findDeviceMac(deviceName);
-    if (mac.isEmpty()) return false;
+    if (mac.isEmpty()) {
+        if (errorOut) *errorOut = QStringLiteral("not paired (no matching device for '%1')")
+                                      .arg(deviceName);
+        return false;
+    }
 
     const QString cmd = connect ? QStringLiteral("connect")
                                 : QStringLiteral("disconnect");
     int code = -1;
-    runBluetoothctl({cmd, mac}, 8000, &code);
+    const QString output = runBluetoothctl({cmd, mac}, 8000, &code);
+    if (code != 0 && errorOut) {
+        *errorOut = output.trimmed().isEmpty()
+            ? QStringLiteral("bluetoothctl exited with code %1").arg(code)
+            : output.trimmed();
+    }
     return code == 0;
 }
 

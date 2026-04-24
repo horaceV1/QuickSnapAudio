@@ -8,6 +8,7 @@
 #include <QTableWidget>
 #include <QComboBox>
 #include <QLabel>
+#include <QCheckBox>
 #include <QCloseEvent>
 #include <QPoint>
 #include <QSet>
@@ -105,6 +106,8 @@ private slots:
     void onTitleBarMaximize();
     void onTitleBarClose();
 
+    void onAutostartToggled(bool checked);
+
 private:
     void setupUi();
     void loadFromConfig();
@@ -125,6 +128,7 @@ private:
     QTableWidget *m_table;
     QComboBox *m_deviceCombo;
     QComboBox *m_themeCombo;
+    QCheckBox *m_autostartCheck = nullptr;
     QPushButton *m_addBtn;
     QPushButton *m_removeBtn;
     QPushButton *m_saveBtn;

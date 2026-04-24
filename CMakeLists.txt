@@ -33,6 +33,7 @@ set(SOURCES
 )
 
 list(APPEND SOURCES src/bluetoothmanager.cpp src/bluetoothmanager.h)
+list(APPEND SOURCES src/autostartmanager.cpp src/autostartmanager.h)
 
 if(WIN32)
     list(APPEND SOURCES src/platform/windows_audio.cpp src/platform/windows_audio.h)

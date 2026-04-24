@@ -7,9 +7,9 @@
 
 namespace LinuxBluetooth {
     // Connect / disconnect a paired Bluetooth device by its friendly name
-    // using `bluetoothctl`. Returns true if the underlying command exits
-    // successfully.
-    bool setConnected(const QString &deviceName, bool connect);
+    // using `bluetoothctl`. On failure, errorOut is filled with a
+    // human-readable explanation.
+    bool setConnected(const QString &deviceName, bool connect, QString *errorOut = nullptr);
 }
 
 #endif // __linux__

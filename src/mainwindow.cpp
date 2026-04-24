@@ -3,12 +3,14 @@
 #include "audiodevicemanager.h"
 #include "hotkeymanager.h"
 #include "bluetoothmanager.h"
+#include "autostartmanager.h"
 #include "deviceentry.h"
 #include "trayicon.h"
 #include "thememanager.h"
 
 #include <QHeaderView>
 #include <QKeySequenceEdit>
+#include <QCheckBox>
 #include <QUuid>
 #include <QMessageBox>
 #include <QGroupBox>
@@ -374,6 +376,12 @@ void MainWindow::setupUi()
     themeRow->addWidget(themeLabel);
     themeRow->addWidget(m_themeCombo);
     themeRow->addStretch();
+
+    m_autostartCheck = new QCheckBox("Launch at system startup", toolbarCard);
+    m_autostartCheck->setObjectName("autostartCheck");
+    m_autostartCheck->setChecked(AutostartManager::isEnabled());
+    themeRow->addWidget(m_autostartCheck);
+
     toolbarLayout->addLayout(themeRow);
 
     auto *addRow = new QHBoxLayout();
@@ -455,6 +463,8 @@ void MainWindow::setupUi()
     connect(m_refreshBtn,&QPushButton::clicked, this, &MainWindow::onRefreshDevices);
     connect(m_themeCombo, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, &MainWindow::onThemeChanged);
+    connect(m_autostartCheck, &QCheckBox::toggled,
+            this, &MainWindow::onAutostartToggled);
 
     onRefreshDevices();
 }
@@ -569,14 +579,14 @@ void MainWindow::rebindAllHotkeys()
     for (const auto &entry : entries) {
         if (entry.hotkey.isEmpty()) continue;
 
-        const bool isBt = BluetoothManager::looksLikeBluetooth(entry.deviceName);
-
+        // Always register a long-press handler. The BT operation itself will
+        // gracefully no-op (with an explanatory notification) if the device
+        // isn't actually a paired Bluetooth endpoint. This avoids the trap
+        // where our name heuristic misses devices like "Headphones (X Stereo)".
         HotkeyManager::HotkeyCallback shortCb =
             [this, entry]() { handleHotkeyShortPress(entry); };
-        HotkeyManager::HotkeyCallback longCb = nullptr;
-        if (isBt) {
-            longCb = [this, entry]() { handleHotkeyLongPress(entry); };
-        }
+        HotkeyManager::HotkeyCallback longCb =
+            [this, entry]() { handleHotkeyLongPress(entry); };
 
         m_hotkeyManager->registerHotkey(entry.id, entry.hotkey,
                                         std::move(shortCb), std::move(longCb), 1200);
@@ -618,20 +628,24 @@ void MainWindow::handleHotkeyLongPress(const DeviceEntry &entry)
     const QString key = entry.deviceName.toLower();
     const bool currentlyDisconnected = m_disconnectedDevices.contains(key);
 
+    QString err;
     bool ok = false;
     QString verb;
     if (currentlyDisconnected) {
-        ok = m_bluetoothManager->connect(entry.deviceName);
-        verb = ok ? "Reconnecting" : "Failed to reconnect";
+        ok = m_bluetoothManager->connect(entry.deviceName, &err);
+        verb = ok ? QStringLiteral("Reconnecting") : QStringLiteral("Reconnect failed");
         if (ok) m_disconnectedDevices.remove(key);
     } else {
-        ok = m_bluetoothManager->disconnect(entry.deviceName);
-        verb = ok ? "Disconnected" : "Failed to disconnect";
+        ok = m_bluetoothManager->disconnect(entry.deviceName, &err);
+        verb = ok ? QStringLiteral("Disconnected") : QStringLiteral("Disconnect failed");
         if (ok) m_disconnectedDevices.insert(key);
     }
 
     if (m_trayIcon) {
-        m_trayIcon->showSwitchedNotification(QString("%1 %2").arg(verb, entry.deviceName));
+        QString msg = QStringLiteral("%1 %2").arg(verb, entry.deviceName);
+        if (!ok && !err.isEmpty())
+            msg += QStringLiteral(" (%1)").arg(err);
+        m_trayIcon->showSwitchedNotification(msg);
     }
 }
 
@@ -643,6 +657,24 @@ void MainWindow::onThemeChanged(int index)
     m_configManager->saveTheme(themeName);
     applyCurrentTheme();
     m_statusLabel->setText(QString("Theme: %1").arg(themeName));
+}
+
+void MainWindow::onAutostartToggled(bool checked)
+{
+    QString err;
+    const bool ok = AutostartManager::setEnabled(checked, &err);
+    if (!ok) {
+        // Revert checkbox state without re-triggering this slot.
+        QSignalBlocker block(m_autostartCheck);
+        m_autostartCheck->setChecked(AutostartManager::isEnabled());
+        m_statusLabel->setText(
+            QString("Could not %1 autostart%2")
+                .arg(checked ? "enable" : "disable",
+                     err.isEmpty() ? QString() : QString(": %1").arg(err)));
+        return;
+    }
+    m_statusLabel->setText(checked ? "Autostart enabled"
+                                   : "Autostart disabled");
 }
 
 void MainWindow::applyCurrentTheme()

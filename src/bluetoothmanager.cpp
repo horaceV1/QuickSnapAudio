@@ -38,26 +38,34 @@ bool BluetoothManager::looksLikeBluetooth(const QString &deviceName)
     return false;
 }
 
-bool BluetoothManager::disconnect(const QString &deviceName)
+bool BluetoothManager::disconnect(const QString &deviceName, QString *errorOut)
 {
-    if (deviceName.isEmpty()) return false;
+    if (deviceName.isEmpty()) {
+        if (errorOut) *errorOut = QStringLiteral("empty device name");
+        return false;
+    }
 #ifdef _WIN32
-    return WindowsBluetooth::setConnected(deviceName, false);
+    return WindowsBluetooth::setConnected(deviceName, false, errorOut);
 #elif defined(__linux__)
-    return LinuxBluetooth::setConnected(deviceName, false);
+    return LinuxBluetooth::setConnected(deviceName, false, errorOut);
 #else
+    if (errorOut) *errorOut = QStringLiteral("unsupported platform");
     return false;
 #endif
 }
 
-bool BluetoothManager::connect(const QString &deviceName)
+bool BluetoothManager::connect(const QString &deviceName, QString *errorOut)
 {
-    if (deviceName.isEmpty()) return false;
+    if (deviceName.isEmpty()) {
+        if (errorOut) *errorOut = QStringLiteral("empty device name");
+        return false;
+    }
 #ifdef _WIN32
-    return WindowsBluetooth::setConnected(deviceName, true);
+    return WindowsBluetooth::setConnected(deviceName, true, errorOut);
 #elif defined(__linux__)
-    return LinuxBluetooth::setConnected(deviceName, true);
+    return LinuxBluetooth::setConnected(deviceName, true, errorOut);
 #else
+    if (errorOut) *errorOut = QStringLiteral("unsupported platform");
     return false;
 #endif
 }

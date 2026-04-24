@@ -26,11 +26,12 @@ public:
     static bool looksLikeBluetooth(const QString &deviceName);
 
     // Disconnect the bluetooth device whose friendly name matches deviceName.
-    // Returns true on success.
-    bool disconnect(const QString &deviceName);
+    // On failure, errorOut (if provided) is filled with a human-readable
+    // explanation (e.g. "Permission denied — run as administrator").
+    bool disconnect(const QString &deviceName, QString *errorOut = nullptr);
 
     // (Re)connect the bluetooth device whose friendly name matches deviceName.
-    bool connect(const QString &deviceName);
+    bool connect(const QString &deviceName, QString *errorOut = nullptr);
 };
 
 #endif // BLUETOOTHMANAGER_H
