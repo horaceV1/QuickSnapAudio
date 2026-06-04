@@ -162,14 +162,16 @@ jobs:
             - **Windows**: Download `QuickSnapAudio-Setup.exe` and run the installer
             - **Linux (Debian/Ubuntu)**: Download the `.deb` file and install with `sudo dpkg -i quicksnapaudio_*.deb`
 
-            ### What's New in v1.0.6
-            - **Hold-to-disconnect for Bluetooth / wireless devices** — holding a device's hotkey for 1.2s disconnects the paired Bluetooth audio device; holding it again reconnects it. Wireless detection is automatic from the device name and shown as `· BT` in the device picker.
-            - **Refreshed, more cohesive UI** — modern card-based layout, refined typography, consistent input styling, custom-rounded scrollbars, and a tighter colour palette across all 7 themes.
-            - **Cohesive window controls** — minimize / maximize / close buttons are now custom-painted to share an identical icon language regardless of system fonts; the maximize glyph switches to a restore icon when the window is maximized.
-            - **Hardened auto-updater** — the update download is now restricted to GitHub-controlled hosts over HTTPS as a defence-in-depth measure against tampered API responses.
+            ### What's New in v1.0.8
+            - **Fixed device switching on Linux** — switching back to a previously selected output/input now actually redirects audio. Previously only the *default* device was updated, so already-playing streams stayed on the old device and switching appeared to do nothing. Existing playback and capture streams are now moved to the newly selected device immediately.
+            - **More robust switching** — added a safety timeout so a stalled PulseAudio connection can no longer hang the UI during a device switch.
+            - **Dependencies & security** — refreshed CI build/runtime dependencies and verified the hardened auto-updater (HTTPS + GitHub host allowlist).
 
-            ### Previous Highlights (v1.0.5)
-            - Toggle mute on repeat hotkey, sleek dark custom title bar, window opens on launch, installer prompts for desktop shortcut, optional "Run app now" on install
+            ### Previous Highlights (v1.0.7)
+            - UAC manifest for clean elevation, plus reliability and UX improvements.
+
+            ### Previous Highlights (v1.0.6)
+            - Hold-to-disconnect for Bluetooth / wireless devices, refreshed card-based UI, custom-painted window controls, and a hardened auto-updater.
           files: |
             artifacts/*
           draft: false

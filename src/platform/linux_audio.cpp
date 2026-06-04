@@ -123,7 +123,88 @@ struct SetDefaultArgs {
     PulseSetData *data;
     QByteArray deviceIdUtf8;
     bool isOutput;
+    int pendingMoves;
+    bool enumDone;
 };
+
+// Finish the operation once stream enumeration has completed and every
+// in-flight move has reported back.
+static void finishSetDefaultIfReady(SetDefaultArgs *args)
+{
+    if (args->enumDone && args->pendingMoves <= 0) {
+        args->data->done = true;
+        pa_mainloop_quit(args->data->mainloop, 0);
+    }
+}
+
+// Called when an individual stream has been moved to the target device.
+static void move_done_cb(pa_context *, int success, void *userdata)
+{
+    auto *args = static_cast<SetDefaultArgs *>(userdata);
+    Q_UNUSED(success);
+    if (args->pendingMoves > 0)
+        args->pendingMoves--;
+    finishSetDefaultIfReady(args);
+}
+
+// Move every currently-playing output stream onto the new default sink so the
+// switch takes effect immediately instead of only applying to future streams.
+static void sink_input_move_cb(pa_context *c, const pa_sink_input_info *info, int eol, void *userdata)
+{
+    auto *args = static_cast<SetDefaultArgs *>(userdata);
+    if (eol > 0) {
+        args->enumDone = true;
+        finishSetDefaultIfReady(args);
+        return;
+    }
+    if (info) {
+        args->pendingMoves++;
+        pa_operation *o = pa_context_move_sink_input_by_name(
+            c, info->index, args->deviceIdUtf8.constData(), move_done_cb, args);
+        if (o)
+            pa_operation_unref(o);
+        else if (args->pendingMoves > 0)
+            args->pendingMoves--;
+    }
+}
+
+// Same as above for capture streams routed to the new default source.
+static void source_output_move_cb(pa_context *c, const pa_source_output_info *info, int eol, void *userdata)
+{
+    auto *args = static_cast<SetDefaultArgs *>(userdata);
+    if (eol > 0) {
+        args->enumDone = true;
+        finishSetDefaultIfReady(args);
+        return;
+    }
+    if (info) {
+        args->pendingMoves++;
+        pa_operation *o = pa_context_move_source_output_by_name(
+            c, info->index, args->deviceIdUtf8.constData(), move_done_cb, args);
+        if (o)
+            pa_operation_unref(o);
+        else if (args->pendingMoves > 0)
+            args->pendingMoves--;
+    }
+}
+
+// After the default device has been set, redirect existing streams.
+static void default_set_cb(pa_context *c, int success, void *userdata)
+{
+    auto *args = static_cast<SetDefaultArgs *>(userdata);
+    args->data->success = (success != 0);
+
+    pa_operation *o = args->isOutput
+        ? pa_context_get_sink_input_info_list(c, sink_input_move_cb, args)
+        : pa_context_get_source_output_info_list(c, source_output_move_cb, args);
+    if (o) {
+        pa_operation_unref(o);
+    } else {
+        // Could not enumerate streams; the default was still updated.
+        args->enumDone = true;
+        finishSetDefaultIfReady(args);
+    }
+}
 
 static void context_state_cb_set(pa_context *c, void *userdata)
 {
@@ -133,9 +214,9 @@ static void context_state_cb_set(pa_context *c, void *userdata)
     switch (pa_context_get_state(c)) {
     case PA_CONTEXT_READY:
         if (args->isOutput) {
-            pa_context_set_default_sink(c, args->deviceIdUtf8.constData(), success_cb, data);
+            pa_context_set_default_sink(c, args->deviceIdUtf8.constData(), default_set_cb, args);
         } else {
-            pa_context_set_default_source(c, args->deviceIdUtf8.constData(), success_cb, data);
+            pa_context_set_default_source(c, args->deviceIdUtf8.constData(), default_set_cb, args);
         }
         break;
     case PA_CONTEXT_FAILED:
@@ -159,6 +240,8 @@ bool LinuxAudio::setDefaultDevice(const QString &deviceId, bool isOutput)
     args.data = &data;
     args.deviceIdUtf8 = deviceId.toUtf8();
     args.isOutput = isOutput;
+    args.pendingMoves = 0;
+    args.enumDone = false;
 
     pa_mainloop *ml = pa_mainloop_new();
     data.mainloop = ml;
@@ -168,9 +251,14 @@ bool LinuxAudio::setDefaultDevice(const QString &deviceId, bool isOutput)
     pa_context_set_state_callback(ctx, context_state_cb_set, &args);
     pa_context_connect(ctx, nullptr, PA_CONTEXT_NOFLAGS, nullptr);
 
+    QElapsedTimer timer;
+    timer.start();
     int ret = 0;
     while (!data.done) {
         if (pa_mainloop_iterate(ml, 1, &ret) < 0)
+            break;
+        // Safety net so a stalled PulseAudio connection cannot hang the UI.
+        if (timer.elapsed() > 5000)
             break;
     }
 

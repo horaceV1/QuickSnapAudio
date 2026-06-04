@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName("QuickSnapAudio");
-    app.setApplicationVersion("1.0.7");
+    app.setApplicationVersion("1.0.8");
     app.setOrganizationName("QuickSnapAudio");
     app.setQuitOnLastWindowClosed(false);
 
